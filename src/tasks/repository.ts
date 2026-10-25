@@ -15,6 +15,7 @@ import {
   assertCanFinishTask,
   assertCanUpdate,
   assertParentAcceptsSubtask,
+  assertStartNotAfterEnd,
   type TaskPriority,
   type TaskStatus,
 } from './rules.ts';
@@ -26,6 +27,8 @@ export type Task = {
   readonly parentId: string | null;
   readonly priority: TaskPriority;
   readonly repeatTaskConfigId: string | null;
+  readonly startsAt: string | null;
+  readonly endsAt: string | null;
   readonly completedAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -38,6 +41,8 @@ export type CreateTaskInput = {
   readonly priority: TaskPriority;
   readonly detail: string;
   readonly parentId: string | null;
+  readonly startsAt: string | null;
+  readonly endsAt: string | null;
 };
 
 export type UpdateTaskInput = {
@@ -46,6 +51,8 @@ export type UpdateTaskInput = {
   readonly priority?: TaskPriority;
   readonly detail?: string;
   readonly parentId?: string | null;
+  readonly startsAt?: string | null;
+  readonly endsAt?: string | null;
 };
 
 type TaskRow = {
@@ -55,13 +62,15 @@ type TaskRow = {
   parentId: string | null;
   priority: TaskPriority;
   repeatTaskConfigId: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 const SELECT_TASK = `SELECT id, name, status, parent_id, priority, repeat_task_config_id,
-  completed_at, created_at, updated_at
+  starts_at, ends_at, completed_at, created_at, updated_at
   FROM tasks WHERE id = ?`;
 
 export async function createTask(dataDir: string, input: CreateTaskInput): Promise<Task> {
@@ -71,6 +80,7 @@ export async function createTask(dataDir: string, input: CreateTaskInput): Promi
     if (input.parentId !== null) {
       assertParentAcceptsSubtask(db, input.parentId, id);
     }
+    assertStartNotAfterEnd(input.startsAt, input.endsAt);
 
     const detailPath = taskDetailPath(dataDir, id);
     db.exec('BEGIN IMMEDIATE');
@@ -78,9 +88,9 @@ export async function createTask(dataDir: string, input: CreateTaskInput): Promi
       db.prepare(
         `INSERT INTO tasks (
           id, name, status, parent_id, priority, repeat_task_config_id,
-          completed_at, created_at, updated_at
-        ) VALUES (?, ?, 'incomplete', ?, ?, NULL, NULL, ?, ?)`,
-      ).run(id, input.name, input.parentId, input.priority, now, now);
+          starts_at, ends_at, completed_at, created_at, updated_at
+        ) VALUES (?, ?, 'incomplete', ?, ?, NULL, ?, ?, NULL, ?, ?)`,
+      ).run(id, input.name, input.parentId, input.priority, input.startsAt, input.endsAt, now, now);
     } catch (error) {
       rollback(db);
       throw error;
@@ -122,11 +132,16 @@ export async function updateTask(dataDir: string, input: UpdateTaskInput): Promi
     const priority = input.priority ?? existing.priority;
     const parentId = input.parentId === undefined ? existing.parentId : input.parentId;
     const detail = input.detail === undefined ? existing.detail : input.detail;
+    const startsAt = input.startsAt === undefined ? existing.startsAt : input.startsAt;
+    const endsAt = input.endsAt === undefined ? existing.endsAt : input.endsAt;
+    assertStartNotAfterEnd(startsAt, endsAt);
     if (
       name === existing.name &&
       priority === existing.priority &&
       parentId === existing.parentId &&
-      detail === existing.detail
+      detail === existing.detail &&
+      startsAt === existing.startsAt &&
+      endsAt === existing.endsAt
     ) {
       return existing;
     }
@@ -137,9 +152,9 @@ export async function updateTask(dataDir: string, input: UpdateTaskInput): Promi
     try {
       db.prepare(
         `UPDATE tasks
-         SET name = ?, priority = ?, parent_id = ?, updated_at = ?
+         SET name = ?, priority = ?, parent_id = ?, starts_at = ?, ends_at = ?, updated_at = ?
          WHERE id = ?`,
-      ).run(name, priority, parentId, now, input.id);
+      ).run(name, priority, parentId, startsAt, endsAt, now, input.id);
       if (detail !== existing.detail) {
         try {
           await writeTaskDetail(existing.detailPath, detail);
@@ -227,6 +242,8 @@ async function loadTask(db: DatabaseSync, dataDir: string, id: string): Promise<
     parentId: row.parentId,
     priority: row.priority,
     repeatTaskConfigId: row.repeatTaskConfigId,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
     completedAt: row.completedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -247,6 +264,8 @@ function requireRow(db: DatabaseSync, id: string): TaskRow {
     parentId: nullableText(row.parent_id, 'parent_id'),
     priority: requiredPriority(row.priority),
     repeatTaskConfigId: nullableText(row.repeat_task_config_id, 'repeat_task_config_id'),
+    startsAt: nullableText(row.starts_at, 'starts_at'),
+    endsAt: nullableText(row.ends_at, 'ends_at'),
     completedAt: nullableText(row.completed_at, 'completed_at'),
     createdAt: requiredText(row.created_at, 'created_at'),
     updatedAt: requiredText(row.updated_at, 'updated_at'),

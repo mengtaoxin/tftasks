@@ -14,6 +14,8 @@ type TaskJson = {
   parentId: string | null;
   priority: string;
   repeatTaskConfigId: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -48,6 +50,8 @@ function expectStoredTask(task: TaskJson, dataDir: string): void {
   expect(task.createdAt).toMatch(ISO_TIME);
   expect(task.updatedAt).toMatch(ISO_TIME);
   expect(task.repeatTaskConfigId).toBeNull();
+  expect(task.startsAt === null || ISO_TIME.test(task.startsAt)).toBe(true);
+  expect(task.endsAt === null || ISO_TIME.test(task.endsAt)).toBe(true);
   expect(task.completedAt === null || ISO_TIME.test(task.completedAt)).toBe(true);
 }
 
@@ -96,11 +100,17 @@ describe('tasks', () => {
         ['priority', true],
         ['detail', false],
         ['parentId', false],
+        ['startsAt', false],
+        ['endsAt', false],
       ]);
       expect(helpFieldLine(request, 'name')).toMatch(/non-empty/i);
       expect(helpFieldLine(request, 'priority')).toMatch(/low.*medium.*high/);
       expect(helpFieldLine(request, 'detail')).toMatch(/defaults to empty/i);
       expect(helpFieldLine(request, 'parentId')).toMatch(/defaults to null/i);
+      expect(helpFieldLine(request, 'startsAt')).toMatch(/start of that day/i);
+      expect(helpFieldLine(request, 'startsAt')).toMatch(/defaults to null/i);
+      expect(helpFieldLine(request, 'endsAt')).toMatch(/end of that day/i);
+      expect(helpFieldLine(request, 'endsAt')).toMatch(/defaults to null/i);
       expectTaskHelpResponse(response);
     });
 
@@ -118,7 +128,11 @@ describe('tasks', () => {
         ['detail', false],
         ['priority', false],
         ['parentId', false],
+        ['startsAt', false],
+        ['endsAt', false],
       ]);
+      expect(helpFieldLine(request, 'startsAt')).toMatch(/null clears/i);
+      expect(helpFieldLine(request, 'endsAt')).toMatch(/null clears/i);
       expectTaskHelpResponse(response);
     });
 
@@ -185,6 +199,8 @@ describe('tasks', () => {
         ['items.parentId', true],
         ['items.priority', true],
         ['items.repeatTaskConfigId', true],
+        ['items.startsAt', true],
+        ['items.endsAt', true],
         ['items.completedAt', true],
         ['items.createdAt', true],
         ['items.updatedAt', true],
@@ -210,6 +226,8 @@ describe('tasks', () => {
         'items.status',
         'items.parentId',
         'items.repeatTaskConfigId',
+        'items.startsAt',
+        'items.endsAt',
         'items.completedAt',
       ]) {
         const line = helpFieldLine(response, name);
@@ -275,6 +293,8 @@ describe('tasks', () => {
       status: 'incomplete',
       parentId: null,
       priority: 'high',
+      startsAt: null,
+      endsAt: null,
       completedAt: null,
       detail: 'Ship it',
     });
@@ -308,6 +328,199 @@ describe('tasks', () => {
     expect(child.parentId).toBe(parent.id);
     expect(child.detail).toBe('nested');
     expectStoredTask(child, dataDir);
+  });
+
+  it('stores a creation time and optional start and end dates on the local day', async () => {
+    const dataDir = await initHome();
+
+    const open = await create({ name: 'Open', priority: 'low', startsAt: null, endsAt: null });
+    expectStoredTask(open, dataDir);
+    expect(open.startsAt).toBeNull();
+    expect(open.endsAt).toBeNull();
+    expect(open.completedAt).toBeNull();
+    expect(open.createdAt).toMatch(ISO_TIME);
+
+    const planned = await create({
+      name: 'Planned',
+      priority: 'high',
+      startsAt: '2026-10-26',
+      endsAt: '2026-10-26',
+    });
+    expect(planned.startsAt).toBe(localDayStart(2026, 10, 26));
+    expect(planned.endsAt).toBe(localDayEnd(2026, 10, 26));
+    expect(planned.completedAt).toBeNull();
+    expect(planned.createdAt).toMatch(ISO_TIME);
+
+    const startOnly = await create({ name: 'Start', priority: 'low', startsAt: '2026-10-01' });
+    expect(startOnly.startsAt).toBe(localDayStart(2026, 10, 1));
+    expect(startOnly.endsAt).toBeNull();
+
+    const earlyMorning = new Date(2026, 9, 27, 0, 30, 0, 0);
+    const snapped = await create({
+      name: 'Snapped',
+      priority: 'medium',
+      startsAt: earlyMorning.toISOString(),
+      endsAt: '2026-10-28T23:15:00.000Z',
+    });
+    expect(snapped.startsAt).toBe(localDayStart(2026, 10, 27));
+    const endInstant = new Date('2026-10-28T23:15:00.000Z');
+    expect(snapped.endsAt).toBe(
+      localDayEnd(endInstant.getFullYear(), endInstant.getMonth() + 1, endInstant.getDate()),
+    );
+  });
+
+  it('rejects an inverted or invalid date and does not create a task', async () => {
+    const dataDir = await initHome();
+
+    expect(
+      await run([
+        'task:create',
+        '--params',
+        JSON.stringify({
+          name: 'Backwards',
+          priority: 'low',
+          startsAt: '2026-10-27',
+          endsAt: '2026-10-26',
+        }),
+      ]),
+    ).toEqual(jsonError('Start date is after end date.'));
+    expect(
+      await run([
+        'task:create',
+        '--params',
+        JSON.stringify({ name: 'Bad', priority: 'low', startsAt: '2026-02-31' }),
+      ]),
+    ).toEqual(jsonError('Invalid startsAt.'));
+    expect(
+      await run([
+        'task:create',
+        '--params',
+        JSON.stringify({ name: 'Bad', priority: 'low', endsAt: 'Monday' }),
+      ]),
+    ).toEqual(jsonError('Invalid endsAt.'));
+    expect(
+      await run([
+        'task:create',
+        '--params',
+        JSON.stringify({ name: 'Bad', priority: 'low', endsAt: '2026-10-26T00:00:00' }),
+      ]),
+    ).toEqual(jsonError('Invalid endsAt.'));
+    expect(taskNames(dataDir)).toEqual([]);
+  });
+
+  it('edits start and end dates of an incomplete task and can clear them', async () => {
+    await initHome();
+    const task = await create({
+      name: 'Window',
+      priority: 'medium',
+      startsAt: '2026-10-20',
+      endsAt: '2026-10-26',
+    });
+
+    const moved = await run([
+      'task:update',
+      '--params',
+      JSON.stringify({ id: task.id, startsAt: '2026-10-21', endsAt: '2026-10-27' }),
+    ]);
+
+    expect(moved.exitCode).toBe(0);
+    const updated = parsedTask(moved.stdout);
+    expect(updated.startsAt).toBe(localDayStart(2026, 10, 21));
+    expect(updated.endsAt).toBe(localDayEnd(2026, 10, 27));
+    expect(updated.createdAt).toBe(task.createdAt);
+    expect(updated.completedAt).toBeNull();
+    expect(updated.updatedAt).not.toBe(task.updatedAt);
+
+    const cleared = await run([
+      'task:update',
+      '--params',
+      JSON.stringify({ id: task.id, startsAt: null, endsAt: null }),
+    ]);
+    expect(parsedTask(cleared.stdout)).toMatchObject({
+      startsAt: null,
+      endsAt: null,
+      createdAt: task.createdAt,
+    });
+  });
+
+  it('rejects a start date after the end date and leaves the task unchanged', async () => {
+    await initHome();
+    const task = await create({
+      name: 'Window',
+      priority: 'low',
+      endsAt: '2026-10-26',
+    });
+
+    expect(
+      await run([
+        'task:update',
+        '--params',
+        JSON.stringify({ id: task.id, startsAt: '2026-10-27' }),
+      ]),
+    ).toEqual(jsonError('Start date is after end date.'));
+    expect(await read(task.id)).toEqual(task);
+  });
+
+  it('records the actual completion time and keeps the planned dates', async () => {
+    await initHome();
+    const task = await create({
+      name: 'Monday',
+      priority: 'high',
+      startsAt: '2026-10-26',
+      endsAt: '2026-10-26',
+    });
+    const before = Date.now();
+
+    const result = await run([
+      'task:finish',
+      '--params',
+      JSON.stringify({ kind: 'task', id: task.id }),
+    ]);
+
+    const after = Date.now();
+    expect(result.exitCode).toBe(0);
+    const finished = parsedTask(result.stdout);
+    expect(finished.status).toBe('complete');
+    expect(finished.startsAt).toBe(task.startsAt);
+    expect(finished.endsAt).toBe(task.endsAt);
+    expect(finished.completedAt).toMatch(ISO_TIME);
+    const completedAt = Date.parse(finished.completedAt ?? '');
+    expect(completedAt).toBeGreaterThanOrEqual(before);
+    expect(completedAt).toBeLessThanOrEqual(after);
+    expect(finished.completedAt).not.toBe(finished.endsAt);
+  });
+
+  it('refuses to change the start or end date of a completed task', async () => {
+    await initHome();
+    const created = await create({
+      name: 'Frozen',
+      priority: 'low',
+      startsAt: '2026-10-26',
+      endsAt: '2026-10-27',
+    });
+    const finish = await run([
+      'task:finish',
+      '--params',
+      JSON.stringify({ kind: 'task', id: created.id }),
+    ]);
+    expect(finish.exitCode).toBe(0);
+    const finished = parsedTask(finish.stdout);
+
+    expect(
+      await run([
+        'task:update',
+        '--params',
+        JSON.stringify({ id: created.id, startsAt: '2026-11-01' }),
+      ]),
+    ).toEqual(jsonError('Completed tasks cannot be edited.'));
+    expect(
+      await run([
+        'task:update',
+        '--params',
+        JSON.stringify({ id: created.id, endsAt: '2026-11-02' }),
+      ]),
+    ).toEqual(jsonError('Completed tasks cannot be edited.'));
+    expect(await read(created.id)).toEqual(finished);
   });
 
   it('rejects missing params, non-object params, unknown fields, and invalid create input', async () => {
@@ -689,7 +902,7 @@ describe('tasks', () => {
   });
 
   it('lists the task commands in help', async () => {
-    const result = await run(['help']);
+    const result = await run(['--help']);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('task:create');
@@ -726,6 +939,8 @@ const taskHelpResponseFields = [
   ['task.parentId', true],
   ['task.priority', true],
   ['task.repeatTaskConfigId', true],
+  ['task.startsAt', true],
+  ['task.endsAt', true],
   ['task.completedAt', true],
   ['task.createdAt', true],
   ['task.updatedAt', true],
@@ -746,6 +961,10 @@ function expectTaskHelpResponse(response: string): void {
   expectHelpFields(response, taskHelpResponseFields);
   expect(helpFieldLine(response, 'task.status')).toMatch(/incomplete.*complete/);
   expect(helpFieldLine(response, 'task.priority')).toMatch(/low.*medium.*high/);
+  expect(helpFieldLine(response, 'task.startsAt')).toMatch(/start of the start date/i);
+  expect(helpFieldLine(response, 'task.endsAt')).toMatch(/end of the end date/i);
+  expect(helpFieldLine(response, 'task.completedAt')).toMatch(/actually finished/i);
+  expect(helpFieldLine(response, 'task.createdAt')).toMatch(/created/i);
 }
 
 function helpSections(stdout: string): { request: string; response: string } {
@@ -777,6 +996,14 @@ function helpFieldLine(section: string, name: string): string {
     throw new Error(`Missing help field: ${name}`);
   }
   return match[2] ?? '';
+}
+
+function localDayStart(year: number, month: number, day: number): string {
+  return new Date(year, month - 1, day, 0, 0, 0, 0).toISOString();
+}
+
+function localDayEnd(year: number, month: number, day: number): string {
+  return new Date(year, month - 1, day, 23, 59, 59, 999).toISOString();
 }
 
 function taskNames(dataDir: string): string[] {

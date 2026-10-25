@@ -180,7 +180,7 @@ describe('help listing', () => {
   });
 
   it('lists registered commands with column width for long names', async () => {
-    const result = await run(['help']);
+    const result = await run(['--help']);
 
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toBe('');

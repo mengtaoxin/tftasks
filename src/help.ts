@@ -1,41 +1,5 @@
 import { commands } from './commands/registry.ts';
-import type { Command, CommandHelpParam, CommandResult } from './commands/types.ts';
-
-export const helpCommand: Command = {
-  name: 'help',
-  summary: 'Show this help',
-  help: {
-    description:
-      'Print the program overview. That overview has a title, a usage line, the command list, and top-level options.',
-    params: 'none',
-    request: [],
-    response: [
-      {
-        name: 'title',
-        required: true,
-        description: 'Program title at the top of the overview.',
-      },
-      {
-        name: 'Usage',
-        required: true,
-        description: 'Usage section of the overview.',
-      },
-      {
-        name: 'Commands',
-        required: true,
-        description: 'Command list in the overview.',
-      },
-      {
-        name: 'Options',
-        required: true,
-        description: 'Options section of the overview.',
-      },
-    ],
-  },
-  run() {
-    return Promise.resolve(ok(helpText()));
-  },
-};
+import type { Command, CommandHelpParam } from './commands/types.ts';
 
 export function renderCommandHelp(command: Command): string {
   const { help } = command;
@@ -57,9 +21,8 @@ export function renderCommandHelp(command: Command): string {
 }
 
 export function helpText(): string {
-  const listed = [helpCommand, ...commands];
-  const nameWidth = Math.max(...listed.map((command) => command.name.length)) + 2;
-  const commandLines = listed
+  const nameWidth = Math.max(...commands.map((command) => command.name.length)) + 2;
+  const commandLines = commands
     .map((command) => `  ${command.name.padEnd(nameWidth)}${command.summary}`)
     .join('\n');
 
@@ -111,8 +74,4 @@ function formatParams(params: readonly CommandHelpParam[]): string {
 
 function assertNever(value: never): never {
   throw new Error(`Unexpected params mode: ${String(value)}`);
-}
-
-function ok(stdout: string): CommandResult {
-  return { exitCode: 0, stdout, stderr: '' };
 }

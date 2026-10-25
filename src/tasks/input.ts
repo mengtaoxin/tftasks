@@ -10,14 +10,23 @@ import {
   parseQuery,
   parseSort,
 } from '../listing.ts';
+import { taskDateInstant, type TaskDateBoundary } from './dates.ts';
 import type { TaskListQuery } from './list.ts';
 import type { CreateTaskInput, UpdateTaskInput } from './repository.ts';
 import type { TaskPriority } from './rules.ts';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const CREATE_FIELDS = ['name', 'priority', 'detail', 'parentId'] as const;
-const UPDATE_FIELDS = ['id', 'name', 'detail', 'priority', 'parentId'] as const;
+const CREATE_FIELDS = ['name', 'priority', 'detail', 'parentId', 'startsAt', 'endsAt'] as const;
+const UPDATE_FIELDS = [
+  'id',
+  'name',
+  'detail',
+  'priority',
+  'parentId',
+  'startsAt',
+  'endsAt',
+] as const;
 const ID_FIELDS = ['id'] as const;
 const FINISH_FIELDS = ['kind', 'id'] as const;
 const LIST_FIELDS = [
@@ -48,6 +57,8 @@ export function parseCreateParams(params: Record<string, unknown>): CreateTaskIn
     priority: parsePriority(params.priority),
     detail: 'detail' in params ? parseDetail(params.detail) : '',
     parentId: 'parentId' in params ? parseParentId(params.parentId) : null,
+    startsAt: 'startsAt' in params ? parseTaskDate(params.startsAt, 'start') : null,
+    endsAt: 'endsAt' in params ? parseTaskDate(params.endsAt, 'end') : null,
   };
 }
 
@@ -59,6 +70,8 @@ export function parseUpdateParams(params: Record<string, unknown>): UpdateTaskIn
     priority?: TaskPriority;
     detail?: string;
     parentId?: string | null;
+    startsAt?: string | null;
+    endsAt?: string | null;
   } = { id: requireId(params) };
   if ('name' in params) {
     input.name = parseName(params.name);
@@ -71,6 +84,12 @@ export function parseUpdateParams(params: Record<string, unknown>): UpdateTaskIn
   }
   if ('parentId' in params) {
     input.parentId = parseParentId(params.parentId);
+  }
+  if ('startsAt' in params) {
+    input.startsAt = parseTaskDate(params.startsAt, 'start');
+  }
+  if ('endsAt' in params) {
+    input.endsAt = parseTaskDate(params.endsAt, 'end');
   }
   return input;
 }
@@ -157,6 +176,13 @@ function parseStatus(value: unknown): TaskListQuery['status'] {
     throw new AppError('Invalid status.');
   }
   return value;
+}
+
+function parseTaskDate(value: unknown, boundary: TaskDateBoundary): string | null {
+  if (value === null) {
+    return null;
+  }
+  return taskDateInstant(value, boundary);
 }
 
 function parseParentId(value: unknown): string | null {

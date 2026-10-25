@@ -10,6 +10,12 @@ export function assertCanUpdate(status: TaskStatus): void {
   }
 }
 
+export function assertStartNotAfterEnd(startsAt: string | null, endsAt: string | null): void {
+  if (startsAt !== null && endsAt !== null && Date.parse(startsAt) > Date.parse(endsAt)) {
+    throw new AppError('Start date is after end date.');
+  }
+}
+
 export function assertParentAcceptsSubtask(
   db: DatabaseSync,
   parentId: string,

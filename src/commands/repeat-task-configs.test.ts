@@ -14,6 +14,8 @@ type TaskJson = {
   parentId: string | null;
   priority: string;
   repeatTaskConfigId: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -640,6 +642,8 @@ describe('repeat task configs', () => {
       repeatTaskConfigId: config.id,
       detail: 'notes',
     });
+    expect(task.startsAt).toBeNull();
+    expect(task.endsAt).toBeNull();
     expect(task.completedAt).toMatch(ISO_TIME);
     expect(task.completedAt).toBe(task.createdAt);
     expect(task.updatedAt).toBe(task.createdAt);
@@ -776,6 +780,8 @@ describe('repeat task configs', () => {
       parentId: null,
       priority: 'medium',
       repeatTaskConfigId: null,
+      startsAt: null,
+      endsAt: null,
       completedAt: null,
       createdAt: fixture.inbox.createdAt,
       updatedAt: fixture.inbox.updatedAt,
@@ -788,6 +794,8 @@ describe('repeat task configs', () => {
       parentId: fixture.inbox.id,
       priority: 'low',
       repeatTaskConfigId: null,
+      startsAt: null,
+      endsAt: null,
       completedAt: null,
       createdAt: fixture.child.createdAt,
       updatedAt: fixture.child.updatedAt,
@@ -1015,7 +1023,7 @@ describe('repeat task configs', () => {
   });
 
   it('lists the new commands in help', async () => {
-    const result = await run(['help']);
+    const result = await run(['--help']);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('task:list');

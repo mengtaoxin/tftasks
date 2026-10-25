@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
-import { readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -40,13 +39,36 @@ describe('run', () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('Usage:');
-    expect(result.stdout).toContain('help');
+    expect(result.stdout).toContain('-h, --help');
     expect(result.stderr).toBe('');
   });
 
-  it('shows help for the help command and --help', async () => {
-    expect((await run(['help'])).stdout).toContain('Commands:');
-    expect((await run(['--help'])).stdout).toContain('tftasks — task manager');
+  it('shows the overview for --help and -h', async () => {
+    const results = await Promise.all([run(['--help']), run(['-h'])]);
+
+    for (const result of results) {
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('tftasks — task manager');
+      expect(result.stdout).toContain('Commands:');
+      expect(result.stderr).toBe('');
+    }
+  });
+
+  it('rejects help as a command', async () => {
+    const result = await run(['help']);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Unknown command: help');
+    expect(result.stderr).toContain('tftasks --help');
+  });
+
+  it('does not list help among commands', async () => {
+    const result = await run(['--help']);
+    const commandsSection = result.stdout.split('Options:')[0] ?? '';
+
+    expect(commandsSection).toContain('Commands:');
+    expect(commandsSection).not.toMatch(/^\s+help\b/m);
   });
 
   it('says a following --help prints only that command help', async () => {
@@ -80,37 +102,18 @@ describe('run', () => {
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain('Unknown command: nope');
-    expect(result.stderr).toContain('tftasks help');
+    expect(result.stderr).toContain('tftasks --help');
   });
 
-  it('does not create a missing data directory while handling help', async () => {
+  it('does not create a missing data directory while handling --help', async () => {
     const absent = process.env.TFTASKS_HOME;
     if (absent === undefined) {
       throw new Error('TFTASKS_HOME should be set');
     }
 
-    await run(['help']);
+    await run(['--help']);
 
     expect(existsSync(absent)).toBe(false);
-  });
-
-  it('logs dispatched help when the data directory exists', async () => {
-    const dataDir = mkdtempSync(path.join(tmpdir(), 'tftasks-cli-'));
-    cleanup.push(dataDir);
-    process.env.TFTASKS_HOME = dataDir;
-
-    await run(['help']);
-
-    const logsDir = path.join(dataDir, 'logs');
-    expect(existsSync(logsDir)).toBe(true);
-    const files = await readdir(logsDir);
-    expect(files).toHaveLength(1);
-    const fileName = files[0];
-    if (fileName === undefined) {
-      throw new Error('expected a log file');
-    }
-    const text = await readFile(path.join(logsDir, fileName), 'utf8');
-    expect(text).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z help exit=0\n$/);
   });
 
   it('does not log version, help flags, or unknown commands', async () => {
@@ -171,15 +174,6 @@ describe('run', () => {
     });
   });
 
-  it('still prints the overview for the help command', async () => {
-    const result = await run(['help']);
-
-    expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('tftasks — task manager');
-    expect(result.stdout).toContain('tftasks <command> [args]');
-    expect(result.stdout).toContain('Commands:');
-  });
-
   it('prints optional params usage for task:list', async () => {
     const result = await run(['task:list', '--help']);
 
@@ -219,20 +213,4 @@ describe('run', () => {
     expect(result.stdout).toMatch(/^\s{2}error\s+optional\s+/m);
   });
 
-  it('describes the help command itself for help --help', async () => {
-    const result = await run(['help', '--help']);
-
-    expect(result.exitCode).toBe(0);
-    expect(result.stderr).toBe('');
-    expect(result.stdout).toContain('help — Show this help');
-    expect(result.stdout).toContain('Usage:\n  tftasks help\n');
-    expect(result.stdout).toContain('Request:\n  No parameters.');
-    expect(result.stdout).toMatch(/^\s{2}title\s+required\s+/m);
-    expect(result.stdout).toMatch(/^\s{2}Usage\s+required\s+/m);
-    expect(result.stdout).toMatch(/^\s{2}Commands\s+required\s+/m);
-    expect(result.stdout).toMatch(/^\s{2}Options\s+required\s+/m);
-    expect(result.stdout).not.toContain('tftasks — task manager');
-    expect(result.stdout).not.toContain('tftasks <command> [args]');
-    expect(result.stdout).not.toContain('task:create');
-  });
 });

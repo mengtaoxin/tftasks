@@ -174,6 +174,8 @@ INSERT INTO rolled (id) VALUES (1);`,
         'completed_at',
         'created_at',
         'updated_at',
+        'starts_at',
+        'ends_at',
       ]);
       const indexes = db
         .prepare(
@@ -218,10 +220,55 @@ INSERT INTO rolled (id) VALUES (1);`,
       expect(() => insertTask.run('bad-status', 'done', 'c1')).toThrow();
       insertTask.run('t1', 'incomplete', 'c1');
 
+      expect(db.prepare('SELECT starts_at, ends_at FROM tasks WHERE id = ?').get('t1')).toEqual({
+        starts_at: null,
+        ends_at: null,
+      });
+
       db.prepare(`DELETE FROM repeat_task_configs WHERE id = ?`).run('c1');
       expect(db.prepare('SELECT repeat_task_config_id FROM tasks WHERE id = ?').get('t1')).toEqual({
         repeat_task_config_id: null,
       });
+    });
+  });
+});
+
+describe('task date columns', () => {
+  it('adds nullable start and end dates when upgrading a version 1 database', () => {
+    withMemory((db) => {
+      const initial = migrations[0];
+      migrate(db, [initial]);
+      expect(columnNames(db, 'tasks')).not.toContain('starts_at');
+      expect(columnNames(db, 'tasks')).not.toContain('ends_at');
+      db.prepare(
+        `INSERT INTO tasks
+           (id, name, status, parent_id, priority, repeat_task_config_id, completed_at, created_at, updated_at)
+         VALUES ('t1', 'Do', 'incomplete', NULL, 'low', NULL, NULL, '2026-10-25T00:00:00.000Z', '2026-10-25T00:00:00.000Z')`,
+      ).run();
+
+      migrate(db, migrations);
+
+      expect(columnNames(db, 'tasks')).toEqual([
+        'id',
+        'name',
+        'status',
+        'parent_id',
+        'priority',
+        'repeat_task_config_id',
+        'completed_at',
+        'created_at',
+        'updated_at',
+        'starts_at',
+        'ends_at',
+      ]);
+      expect(db.prepare('SELECT starts_at, ends_at FROM tasks WHERE id = ?').get('t1')).toEqual({
+        starts_at: null,
+        ends_at: null,
+      });
+      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([
+        { version: 1 },
+        { version: 2 },
+      ]);
     });
   });
 });
@@ -249,7 +296,7 @@ describe('openDatabase', () => {
     try {
       expect(opened.prepare('PRAGMA foreign_keys').get()).toEqual({ foreign_keys: 1 });
       expect(opened.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()).toEqual({
-        count: 1,
+        count: migrations.length,
       });
     } finally {
       opened.close();
@@ -258,7 +305,7 @@ describe('openDatabase', () => {
     const again = createDatabase(dataDir);
     try {
       expect(again.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()).toEqual({
-        count: 1,
+        count: migrations.length,
       });
     } finally {
       again.close();
@@ -278,7 +325,7 @@ describe('openDatabase', () => {
     const inspect = new DatabaseSync(path.join(dataDir, 'tftasks.db'));
     try {
       expect(inspect.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()).toEqual({
-        count: 1,
+        count: migrations.length,
       });
       expect(
         inspect

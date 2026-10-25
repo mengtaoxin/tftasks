@@ -2,10 +2,8 @@ import packageJson from '../package.json' with { type: 'json' };
 import { commands } from './commands/registry.ts';
 import type { CommandResult } from './commands/types.ts';
 import { resolveDataDir } from './data-dir.ts';
-import { helpCommand, helpText, renderCommandHelp } from './help.ts';
+import { helpText, renderCommandHelp } from './help.ts';
 import { appendCommandLog } from './log.ts';
-
-const program = [helpCommand, ...commands];
 
 export async function run(argv: readonly string[]): Promise<CommandResult> {
   const dataDir = resolveDataDir();
@@ -26,7 +24,7 @@ export async function run(argv: readonly string[]): Promise<CommandResult> {
     return usage(`Unknown option: ${head}`);
   }
 
-  const command = program.find((item) => item.name === head);
+  const command = commands.find((item) => item.name === head);
   if (command === undefined) {
     return usage(`Unknown command: ${head}`);
   }
@@ -48,6 +46,6 @@ function usage(message: string): CommandResult {
   return {
     exitCode: 1,
     stdout: '',
-    stderr: `${message}\nRun "tftasks help" for usage.\n`,
+    stderr: `${message}\nRun "tftasks --help" for usage.\n`,
   };
 }

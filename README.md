@@ -6,4 +6,4 @@
 
 怎么跑、目录和测试见 [docs/commands.md](docs/commands.md)、[docs/file-structure.md](docs/file-structure.md)、[docs/testing.md](docs/testing.md)。
 
-常用命令：`init`、`task:*`、`repeat-task-config:*`、`backup:create`。完整列表见 `tftasks help`。
+常用命令：`init`、`task:*`、`repeat-task-config:*`、`backup:create`。完整列表见 `tftasks --help`。

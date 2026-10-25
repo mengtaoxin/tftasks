@@ -6,6 +6,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { run } from '../cli.ts';
+import { migrations } from '../db/migrations.ts';
 
 describe('init', () => {
   const cleanup: string[] = [];
@@ -89,7 +90,7 @@ describe('init', () => {
     const db = new DatabaseSync(path.join(dataDir, 'tftasks.db'));
     try {
       expect(db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()).toEqual({
-        count: 1,
+        count: migrations.length,
       });
     } finally {
       db.close();
@@ -114,7 +115,7 @@ describe('init', () => {
     const dataDir = path.join(tmpdir(), `tftasks-init-absent-${randomUUID()}`);
     useDataDir(dataDir);
 
-    const result = await run(['help']);
+    const result = await run(['--help']);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('init');

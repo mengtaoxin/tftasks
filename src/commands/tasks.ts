@@ -61,9 +61,19 @@ const taskFields: readonly CommandHelpParam[] = [
     description: 'Repeat task config UUID, or null.',
   },
   {
+    name: 'task.startsAt',
+    required: true,
+    description: 'ISO-8601 timestamp at the local start of the start date, or null.',
+  },
+  {
+    name: 'task.endsAt',
+    required: true,
+    description: 'ISO-8601 timestamp at the local end of the end date, or null.',
+  },
+  {
     name: 'task.completedAt',
     required: true,
-    description: 'ISO-8601 timestamp when the task was completed, or null.',
+    description: 'ISO-8601 timestamp when the task was actually finished, or null.',
   },
   {
     name: 'task.createdAt',
@@ -126,6 +136,18 @@ export const taskCreateCommand: Command = {
       required: false,
       description: 'Task UUID or null. Defaults to null.',
     },
+    {
+      name: 'startsAt',
+      required: false,
+      description:
+        'YYYY-MM-DD or an ISO-8601 timestamp. Stored as the local start of that day. Defaults to null.',
+    },
+    {
+      name: 'endsAt',
+      required: false,
+      description:
+        'YYYY-MM-DD or an ISO-8601 timestamp. Stored as the local end of that day. Defaults to null.',
+    },
   ]),
   run(context) {
     return runJsonCommand(context, async (params) => {
@@ -156,33 +178,48 @@ export const taskReadCommand: Command = {
 export const taskUpdateCommand: Command = {
   name: 'task:update',
   summary: 'Update a task',
-  help: taskCommandHelp('Change the name, detail, priority, or parent of an incomplete task.', [
-    {
-      name: 'id',
-      required: true,
-      description: 'Task UUID.',
-    },
-    {
-      name: 'name',
-      required: false,
-      description: 'Non-empty string.',
-    },
-    {
-      name: 'detail',
-      required: false,
-      description: 'String.',
-    },
-    {
-      name: 'priority',
-      required: false,
-      description: 'low, medium, or high.',
-    },
-    {
-      name: 'parentId',
-      required: false,
-      description: 'Task UUID or null.',
-    },
-  ]),
+  help: taskCommandHelp(
+    'Change the name, detail, priority, parent, start date, or end date of an incomplete task.',
+    [
+      {
+        name: 'id',
+        required: true,
+        description: 'Task UUID.',
+      },
+      {
+        name: 'name',
+        required: false,
+        description: 'Non-empty string.',
+      },
+      {
+        name: 'detail',
+        required: false,
+        description: 'String.',
+      },
+      {
+        name: 'priority',
+        required: false,
+        description: 'low, medium, or high.',
+      },
+      {
+        name: 'parentId',
+        required: false,
+        description: 'Task UUID or null.',
+      },
+      {
+        name: 'startsAt',
+        required: false,
+        description:
+          'YYYY-MM-DD, an ISO-8601 timestamp, or null. Stored as the local start of that day. Null clears it.',
+      },
+      {
+        name: 'endsAt',
+        required: false,
+        description:
+          'YYYY-MM-DD, an ISO-8601 timestamp, or null. Stored as the local end of that day. Null clears it.',
+      },
+    ],
+  ),
   run(context) {
     return runJsonCommand(context, async (params) => {
       const task = await updateTask(context.dataDir, parseUpdateParams(params));
@@ -351,9 +388,19 @@ export const taskListCommand: Command = {
         description: `Repeat task config UUID, or null. ${whenKindIsTask}`,
       },
       {
+        name: 'items.startsAt',
+        required: true,
+        description: `ISO-8601 timestamp at the local start of the start date, or null. ${whenKindIsTask}`,
+      },
+      {
+        name: 'items.endsAt',
+        required: true,
+        description: `ISO-8601 timestamp at the local end of the end date, or null. ${whenKindIsTask}`,
+      },
+      {
         name: 'items.completedAt',
         required: true,
-        description: `ISO-8601 completion time, or null. ${whenKindIsTask}`,
+        description: `ISO-8601 timestamp when the task was actually finished, or null. ${whenKindIsTask}`,
       },
       {
         name: 'items.createdAt',

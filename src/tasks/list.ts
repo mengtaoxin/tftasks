@@ -26,6 +26,8 @@ export type TaskListItem = {
   readonly parentId: string | null;
   readonly priority: TaskPriority;
   readonly repeatTaskConfigId: string | null;
+  readonly startsAt: string | null;
+  readonly endsAt: string | null;
   readonly completedAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -79,7 +81,7 @@ async function loadTaskItems(
   const rows = db
     .prepare(
       `SELECT id, name, status, parent_id, priority, repeat_task_config_id,
-        completed_at, created_at, updated_at
+        starts_at, ends_at, completed_at, created_at, updated_at
        FROM tasks
        WHERE (? IS NULL OR status = ?)
          AND (? IS NULL OR priority = ?)
@@ -96,6 +98,8 @@ async function loadTaskItems(
     parentId: item.parentId,
     priority: item.priority,
     repeatTaskConfigId: item.repeatTaskConfigId,
+    startsAt: item.startsAt,
+    endsAt: item.endsAt,
     completedAt: item.completedAt,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
@@ -182,6 +186,8 @@ function toTaskCandidate(row: Record<string, SQLOutputValue>, dataDir: string): 
     parentId: item.parentId,
     priority: item.priority,
     repeatTaskConfigId: item.repeatTaskConfigId,
+    startsAt: item.startsAt,
+    endsAt: item.endsAt,
     completedAt: item.completedAt,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
@@ -198,6 +204,8 @@ function mapTaskItem(row: Record<string, SQLOutputValue>): TaskListItem {
     parentId: nullableText(row.parent_id, 'parent_id'),
     priority: requiredPriority(row.priority),
     repeatTaskConfigId: nullableText(row.repeat_task_config_id, 'repeat_task_config_id'),
+    startsAt: nullableText(row.starts_at, 'starts_at'),
+    endsAt: nullableText(row.ends_at, 'ends_at'),
     completedAt: nullableText(row.completed_at, 'completed_at'),
     createdAt: requiredText(row.created_at, 'created_at'),
     updatedAt: requiredText(row.updated_at, 'updated_at'),

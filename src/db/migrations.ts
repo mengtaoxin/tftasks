@@ -33,10 +33,19 @@ CREATE INDEX tasks_status_idx ON tasks (status);
 CREATE INDEX tasks_repeat_task_config_id_idx ON tasks (repeat_task_config_id);
 `;
 
+const addTaskDates = `ALTER TABLE tasks ADD COLUMN starts_at TEXT;
+ALTER TABLE tasks ADD COLUMN ends_at TEXT;
+`;
+
 export const migrations = [
   {
     version: 1,
     name: 'create-task-tables',
     sql: createTaskTables,
+  },
+  {
+    version: 2,
+    name: 'add-task-dates',
+    sql: addTaskDates,
   },
 ] as const satisfies readonly Migration[];
