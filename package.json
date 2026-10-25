@@ -21,6 +21,9 @@
     "fmt": "oxfmt .",
     "fmt:check": "oxfmt --check"
   },
+  "dependencies": {
+    "fflate": "^0.8.3"
+  },
   "devDependencies": {
     "@mengtaoxin/oxc-config": "file:../oxc-config",
     "@types/node": "^24.19.2",

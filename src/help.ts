@@ -5,14 +5,15 @@ export const helpCommand: Command = {
   name: 'help',
   summary: 'Show this help',
   run() {
-    return ok(helpText());
+    return Promise.resolve(ok(helpText()));
   },
 };
 
 export function helpText(): string {
   const listed = [helpCommand, ...commands];
+  const nameWidth = Math.max(...listed.map((command) => command.name.length)) + 2;
   const commandLines = listed
-    .map((command) => `  ${command.name.padEnd(12)}${command.summary}`)
+    .map((command) => `  ${command.name.padEnd(nameWidth)}${command.summary}`)
     .join('\n');
 
   return [

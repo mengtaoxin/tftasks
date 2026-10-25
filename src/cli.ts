@@ -1,11 +1,14 @@
 import packageJson from '../package.json' with { type: 'json' };
 import { commands } from './commands/registry.ts';
 import type { CommandResult } from './commands/types.ts';
+import { resolveDataDir } from './data-dir.ts';
 import { helpCommand, helpText } from './help.ts';
+import { appendCommandLog } from './log.ts';
 
 const program = [helpCommand, ...commands];
 
-export function run(argv: readonly string[]): CommandResult {
+export async function run(argv: readonly string[]): Promise<CommandResult> {
+  const dataDir = resolveDataDir();
   const [head, ...rest] = argv;
 
   if (head === undefined || head === '-h' || head === '--help') {
@@ -28,7 +31,9 @@ export function run(argv: readonly string[]): CommandResult {
     return usage(`Unknown command: ${head}`);
   }
 
-  return command.run({ args: rest });
+  const result = await command.run({ args: rest, dataDir });
+  await appendCommandLog(dataDir, command.name, result.exitCode);
+  return result;
 }
 
 function usage(message: string): CommandResult {

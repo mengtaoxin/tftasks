@@ -1,6 +1,6 @@
 import { run } from './cli.ts';
 
-const result = run(process.argv.slice(2));
+const result = await run(process.argv.slice(2));
 
 if (result.stdout.length > 0) {
   process.stdout.write(result.stdout);

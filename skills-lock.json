@@ -7,6 +7,12 @@
       "skillPath": "skills/javascript-typescript-best-practices/SKILL.md",
       "computedHash": "a5657d4d0469016ac4c9a36e62e97261c3186cea33110eee7fca5b2cd8c2232f"
     },
+    "task-divide-and-conquer": {
+      "source": "mengtaoxin/agent-kit",
+      "sourceType": "github",
+      "skillPath": "skills/task-divide-and-conquer/SKILL.md",
+      "computedHash": "ef562c02e224e5bb250930d119837a59f43123131dd4d4729e8d5bf42909d32f"
+    },
     "test-driven-development": {
       "source": "mengtaoxin/agent-kit",
       "sourceType": "github",

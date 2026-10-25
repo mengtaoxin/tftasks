@@ -1,5 +1,6 @@
 export type CommandContext = {
   args: readonly string[];
+  dataDir: string;
 };
 
 export type CommandResult = {
@@ -11,5 +12,5 @@ export type CommandResult = {
 export type Command = {
   name: string;
   summary: string;
-  run: (context: CommandContext) => CommandResult;
+  run: (context: CommandContext) => Promise<CommandResult>;
 };

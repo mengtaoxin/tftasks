@@ -9,10 +9,30 @@
 │   ├── main.ts               进程入口：调用 run，写出 stdout / stderr，设置 exitCode
 │   ├── cli.ts                解析 argv，分发命令，返回 CommandResult
 │   ├── help.ts               内置 help 命令和帮助文本
-│   ├── cli.test.ts           cli 的测试，和被测文件放在一起
+│   ├── data-dir.ts           解析数据目录（TFTASKS_HOME 或 ~/.tftasks）
+│   ├── params.ts             --params / --params-file
+│   ├── json-result.ts        JSON 成功/失败结果
+│   ├── log.ts                命令日志
+│   ├── errors.ts             AppError
+│   ├── listing.ts            列表分页与排序
+│   ├── backup/
+│   │   └── zip.ts            用 fflate 打 zip
+│   ├── db/
+│   │   ├── migrations.ts     迁移 SQL
+│   │   ├── migrate.ts        checksum 迁移器
+│   │   └── open.ts           打开/创建数据库
+│   ├── files/
+│   │   └── attachments.ts    任务与重复配置详情文件
+│   ├── tasks/                任务仓库、规则、列表、入参
+│   ├── repeat/               重复配置仓库、周期、入参
 │   └── commands/
 │       ├── types.ts          Command、CommandContext、CommandResult
-│       └── registry.ts       任务命令登记处，目前是空数组
+│       ├── registry.ts       命令登记处
+│       ├── init.ts
+│       ├── backup.ts
+│       ├── tasks.ts
+│       ├── repeat-task-configs.ts
+│       └── run-json.ts       命令共用的 JSON 参数与 AppError 处理
 ├── package.json              脚本、bin、engines
 ├── tsconfig.json             项目引用，本身不包含源文件
 ├── tsconfig.app.json         检查 src/
@@ -27,6 +47,8 @@
 `node_modules/`、`dist/`、`coverage/` 不入库。
 
 `src/main.ts` 只负责碰到进程。参数解析和命令分发在 `src/cli.ts`，方便测试直接调用 `run`。`help` 是内置命令，写在 `src/help.ts`，不进 `registry.ts`。`-h` / `--help` 和 `-v` / `--version` 也在 `cli.ts` 里处理。
+
+本地数据目录默认 `~/.tftasks`（测试用 `TFTASKS_HOME` 覆盖），经 `init` 后包含 `tftasks.db`、`settings.json`、`logs/`、`backups/`、`files/`。
 
 ## 放文件
 

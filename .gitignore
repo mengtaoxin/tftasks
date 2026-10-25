@@ -8,3 +8,4 @@ coverage/
 *.log
 *.tsbuildinfo
 *.timestamp-*-*.mjs
+.task-divide-and-conquer
