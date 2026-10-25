@@ -65,6 +65,7 @@ describe('help language', () => {
     expect(result.stdout).toContain('创建本地数据目录');
     expect(result.stdout).toMatch(/-h,\s+--help/);
     expect(result.stdout).toMatch(/-v,\s+--version/);
+    expect(result.stdout).toMatch(/--workspace/);
   });
 
   it('renders command help in Chinese when lang is zh', async () => {

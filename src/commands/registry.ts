@@ -7,6 +7,7 @@ import {
   repeatTaskConfigReadCommand,
   repeatTaskConfigUpdateCommand,
 } from './repeat-task-configs.ts';
+import { settingCreateCommand, settingDeleteCommand, settingUpdateCommand } from './settings.ts';
 import {
   taskCreateCommand,
   taskDeleteCommand,
@@ -23,6 +24,9 @@ import type { Command } from './types.ts';
 export const commands: readonly Command[] = [
   initCommand,
   backupCreateCommand,
+  settingCreateCommand,
+  settingUpdateCommand,
+  settingDeleteCommand,
   taskCreateCommand,
   taskReadCommand,
   taskUpdateCommand,

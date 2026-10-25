@@ -289,7 +289,7 @@ describe('repeat task configs', () => {
       expect(result.exitCode).toBe(0);
       expect(result.stderr).toBe('');
       expect(result.stdout).toContain(
-        'Usage:\n  tftasks repeat-task-config:create (--params <json> | --params-file <path>)',
+        'Usage:\n  tftasks repeat-task-config:create [--workspace <path>] (--params <json> | --params-file <path>)',
       );
       const { request, response } = helpSections(result.stdout);
       expectHelpFields(request, [
@@ -350,7 +350,7 @@ describe('repeat task configs', () => {
       expect(result.exitCode).toBe(0);
       expect(result.stderr).toBe('');
       expect(result.stdout).toContain(
-        'Usage:\n  tftasks repeat-task-config:list [--params <json> | --params-file <path>]',
+        'Usage:\n  tftasks repeat-task-config:list [--workspace <path>] [--params <json> | --params-file <path>]',
       );
       const { request, response } = helpSections(result.stdout);
       expectHelpFields(request, [

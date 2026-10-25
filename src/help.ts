@@ -41,14 +41,15 @@ export function helpText(lang: Lang): string {
     commandLines,
     '',
     chrome.options,
-    `  -h, --help       ${chrome.helpOption}`,
-    `  -v, --version    ${chrome.versionOption}`,
+    `  -h, --help         ${chrome.helpOption}`,
+    `  -v, --version      ${chrome.versionOption}`,
+    `  --workspace <path> ${chrome.workspaceOption}`,
     '',
   ].join('\n');
 }
 
 function usageLine(command: Command): string {
-  const invocation = `tftasks ${command.name}`;
+  const invocation = `tftasks ${command.name} [--workspace <path>]`;
   const flags = '--params <json> | --params-file <path>';
   switch (command.help.params) {
     case 'none':

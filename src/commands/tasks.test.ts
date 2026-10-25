@@ -162,7 +162,7 @@ describe('tasks', () => {
       expect(result.exitCode).toBe(0);
       expect(result.stderr).toBe('');
       expect(result.stdout).toContain(
-        'Usage:\n  tftasks task:list [--params <json> | --params-file <path>]',
+        'Usage:\n  tftasks task:list [--workspace <path>] [--params <json> | --params-file <path>]',
       );
       const { request, response } = helpSections(result.stdout);
       expectHelpFields(request, [

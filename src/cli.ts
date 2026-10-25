@@ -12,37 +12,49 @@ import {
 import type { Lang } from './lang.ts';
 import { appendCommandLog } from './log.ts';
 import { loadSettings } from './settings.ts';
+import { extractWorkspace, resolveWorkspace } from './workspace.ts';
 
 export async function run(argv: readonly string[]): Promise<CommandResult> {
-  const dataDir = resolveDataDir();
-  const { lang } = await loadSettings(dataDir);
+  const defaultDataDir = resolveDataDir();
+  const { lang: defaultLang } = await loadSettings(defaultDataDir);
   const [head, ...rest] = argv;
 
   if (head === undefined || head === '-h' || head === '--help') {
-    return { exitCode: 0, stdout: helpText(lang), stderr: '' };
+    return { exitCode: 0, stdout: helpText(defaultLang), stderr: '' };
   }
 
   if (head === '-v' || head === '--version') {
     if (rest.length > 0) {
-      return usage(lang, usageUnexpectedArgsAfter(lang, head));
+      return usage(defaultLang, usageUnexpectedArgsAfter(defaultLang, head));
     }
     return { exitCode: 0, stdout: `${packageJson.version}\n`, stderr: '' };
   }
 
   if (head.startsWith('-')) {
-    return usage(lang, usageUnknownOption(lang, head));
+    return usage(defaultLang, usageUnknownOption(defaultLang, head));
   }
 
   const command = commands.find((item) => item.name === head);
   if (command === undefined) {
-    return usage(lang, usageUnknownCommand(lang, head));
+    return usage(defaultLang, usageUnknownCommand(defaultLang, head));
   }
 
-  if (isCommandHelpRequest(rest)) {
-    return { exitCode: 0, stdout: renderCommandHelp(command, lang), stderr: '' };
+  const extracted = extractWorkspace(rest);
+  if (!extracted.ok) {
+    return usage(defaultLang, extracted.error);
   }
 
-  const result = await command.run({ args: rest, dataDir });
+  if (isCommandHelpRequest(extracted.args)) {
+    return { exitCode: 0, stdout: renderCommandHelp(command, defaultLang), stderr: '' };
+  }
+
+  const resolved = resolveWorkspace(extracted.workspace);
+  if (!resolved.ok) {
+    return usage(defaultLang, resolved.error);
+  }
+
+  const dataDir = resolved.dataDir;
+  const result = await command.run({ args: extracted.args, dataDir });
   await appendCommandLog(dataDir, command.name, result.exitCode);
   return result;
 }

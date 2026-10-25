@@ -13,6 +13,7 @@
 │   ├── settings.ts           读写 settings.json（含 lang）
 │   ├── i18n/                 帮助与 CLI 框架文案
 │   ├── data-dir.ts           解析数据目录（TFTASKS_HOME 或 ~/.tftasks）
+│   ├── workspace.ts          解析命令的 --workspace；未传时走 data-dir
 │   ├── params.ts             --params / --params-file
 │   ├── json-result.ts        JSON 成功/失败结果
 │   ├── log.ts                命令日志
@@ -33,6 +34,7 @@
 │       ├── registry.ts       命令登记处
 │       ├── init.ts
 │       ├── backup.ts
+│       ├── settings.ts       setting:create / update / delete
 │       ├── tasks.ts
 │       ├── repeat-task-configs.ts
 │       └── run-json.ts       命令共用的 JSON 参数与 AppError 处理
@@ -51,7 +53,7 @@
 
 `src/main.ts` 只负责碰到进程。参数解析和命令分发在 `src/cli.ts`，方便测试直接调用 `run`。总览与命令帮助都由 `-h` / `--help` 触发，渲染逻辑在 `src/help.ts`。每条命令带结构化 `help`。顶层的 `-h` / `--help` 和 `-v` / `--version` 在 `cli.ts` 里处理；命令后面只跟一个 `-h` 或 `--help` 时，也在分发前渲染该命令的帮助。
 
-本地数据目录默认 `~/.tftasks`（测试用 `TFTASKS_HOME` 覆盖），经 `init` 后包含 `tftasks.db`、`settings.json`、`logs/`、`backups/`、`files/`。`settings.json` 含 `version` 与 `lang`（`en` / `zh`，默认 `en`），影响帮助与 CLI 提示文案。
+本地数据目录默认 `~/.tftasks`（测试用 `TFTASKS_HOME` 覆盖；命令可用 `--workspace <path>` 指定，路径必须已存在），经 `init` 后包含 `tftasks.db`、`settings.json`、`logs/`、`backups/`、`files/`。`settings.json` 含 `version`（保留，不可用命令改删）与 `lang`（`en` / `zh`，默认 `en`，影响帮助与 CLI 提示文案）；也可用 `setting:create` / `setting:update` / `setting:delete` 维护单条配置。
 
 ## 放文件
 

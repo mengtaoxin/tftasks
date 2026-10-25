@@ -31,6 +31,11 @@ const versionOption: Localized = {
   zh: '显示版本',
 };
 
+const workspaceOption: Localized = {
+  en: 'Workspace directory (default: ~/.tftasks). Must exist when set',
+  zh: '工作区目录（默认：~/.tftasks）。指定时路径必须已存在',
+};
+
 const request: Localized = {
   en: 'Request:',
   zh: '请求：',
@@ -83,6 +88,7 @@ export type HelpChrome = {
   readonly options: string;
   readonly helpOption: string;
   readonly versionOption: string;
+  readonly workspaceOption: string;
   readonly request: string;
   readonly response: string;
   readonly noParameters: string;
@@ -98,6 +104,7 @@ export function helpChrome(lang: Lang): HelpChrome {
     options: text(lang, options),
     helpOption: text(lang, helpOption),
     versionOption: text(lang, versionOption),
+    workspaceOption: text(lang, workspaceOption),
     request: text(lang, request),
     response: text(lang, response),
     noParameters: text(lang, noParameters),

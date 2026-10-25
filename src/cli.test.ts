@@ -144,8 +144,9 @@ describe('run', () => {
       expect(result.stdout).toContain('task:create — Create a task');
       expect(result.stdout).toContain('Create a task');
       expect(result.stdout).toContain(
-        'Usage:\n  tftasks task:create (--params <json> | --params-file <path>)',
+        'Usage:\n  tftasks task:create [--workspace <path>] (--params <json> | --params-file <path>)',
       );
+
       expect(result.stdout).toContain('Request:\n  name');
       expect(result.stdout).toContain('Response:');
     }
@@ -180,7 +181,7 @@ describe('run', () => {
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toBe('');
     expect(result.stdout).toContain(
-      'Usage:\n  tftasks task:list [--params <json> | --params-file <path>]',
+      'Usage:\n  tftasks task:list [--workspace <path>] [--params <json> | --params-file <path>]',
     );
     expect(result.stdout).toContain('Request:\n  status');
   });
@@ -191,7 +192,7 @@ describe('run', () => {
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toBe('');
     expect(result.stdout).toContain('init — Create the local data directory');
-    expect(result.stdout).toContain('Usage:\n  tftasks init\n');
+    expect(result.stdout).toContain('Usage:\n  tftasks init [--workspace <path>]\n');
     expect(result.stdout).toContain('Request:\n  No parameters.');
     expect(result.stdout).toMatch(/^\s{2}success\s+required\s+/m);
     expect(result.stdout).toMatch(/^\s{2}dataDir\s+required\s+/m);
@@ -206,10 +207,70 @@ describe('run', () => {
     expect(result.stdout).toContain(
       'backup:create — Create a zip backup of the database and files',
     );
-    expect(result.stdout).toContain('Usage:\n  tftasks backup:create\n');
+    expect(result.stdout).toContain('Usage:\n  tftasks backup:create [--workspace <path>]\n');
     expect(result.stdout).toContain('Request:\n  No parameters.');
     expect(result.stdout).toMatch(/^\s{2}success\s+required\s+/m);
     expect(result.stdout).toMatch(/^\s{2}path\s+required\s+/m);
     expect(result.stdout).toMatch(/^\s{2}error\s+optional\s+/m);
+  });
+
+  it('documents --workspace on overview and command help', async () => {
+    const overview = await run(['--help']);
+    const initHelp = await run(['init', '--help']);
+    const createHelp = await run(['task:create', '--help']);
+
+    expect(overview.exitCode).toBe(0);
+    expect(overview.stdout).toMatch(/--workspace/);
+    expect(initHelp.stdout).toContain('Usage:\n  tftasks init [--workspace <path>]\n');
+    expect(createHelp.stdout).toContain(
+      'Usage:\n  tftasks task:create [--workspace <path>] (--params <json> | --params-file <path>)',
+    );
+  });
+
+  it('uses --workspace as the data directory when it exists', async () => {
+    const dataDir = mkdtempSync(path.join(tmpdir(), 'tftasks-workspace-'));
+    cleanup.push(dataDir);
+    process.env.TFTASKS_HOME = path.join(tmpdir(), `tftasks-other-${randomUUID()}`);
+
+    const result = await run(['init', '--workspace', dataDir]);
+
+    expect(result).toEqual({
+      exitCode: 0,
+      stderr: '',
+      stdout: `${JSON.stringify({ success: true, dataDir }, null, 2)}\n`,
+    });
+    expect(existsSync(path.join(dataDir, 'tftasks.db'))).toBe(true);
+    expect(existsSync(process.env.TFTASKS_HOME)).toBe(false);
+  });
+
+  it('rejects --workspace when the path does not exist', async () => {
+    const missing = path.join(tmpdir(), `tftasks-workspace-missing-${randomUUID()}`);
+
+    const result = await run(['init', '--workspace', missing]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain(`Workspace does not exist: ${missing}`);
+    expect(result.stderr).toContain('tftasks --help');
+    expect(existsSync(missing)).toBe(false);
+  });
+
+  it('allows command --help with a missing --workspace path', async () => {
+    const missing = path.join(tmpdir(), `tftasks-workspace-missing-${randomUUID()}`);
+
+    const result = await run(['init', '--workspace', missing, '--help']);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('init — Create the local data directory');
+  });
+
+  it('rejects a missing value for --workspace', async () => {
+    const result = await run(['init', '--workspace']);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Missing value for --workspace.');
+    expect(result.stderr).toContain('tftasks --help');
   });
 });
