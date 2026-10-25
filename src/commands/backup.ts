@@ -75,7 +75,11 @@ async function createBackup(dataDir: string): Promise<string> {
       ...fileEntries,
     ]);
 
-    const zipPath = path.join(dataDir, 'backups', `${localTimestamp(new Date())}.zip`);
+    const zipPath = path.join(
+      dataDir,
+      'backups',
+      `tftasks-backup-${localTimestamp(new Date())}.zip`,
+    );
     await writeFile(zipPath, zipBytes);
     return zipPath;
   } finally {

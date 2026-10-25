@@ -103,7 +103,9 @@ describe('backup:create', () => {
     expect(body).toEqual({
       success: true,
       path: expect.stringMatching(
-        new RegExp(`^${escapeRegExp(path.join(dataDir, 'backups'))}[/\\\\]\\d{8}-\\d{6}\\.zip$`),
+        new RegExp(
+          `^${escapeRegExp(path.join(dataDir, 'backups'))}[/\\\\]tftasks-backup-\\d{8}-\\d{6}\\.zip$`,
+        ),
       ),
     });
     if (
@@ -119,10 +121,10 @@ describe('backup:create', () => {
     expect(existsSync(zipPath)).toBe(true);
 
     const stamp = path.basename(zipPath, '.zip');
-    const stampMatch = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})$/.exec(stamp);
+    const stampMatch = /^tftasks-backup-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})$/.exec(stamp);
     expect(stampMatch).not.toBeNull();
     if (stampMatch === null) {
-      throw new Error('expected timestamp filename');
+      throw new Error('expected tftasks-backup timestamp filename');
     }
     const localStamp = new Date(
       Number(stampMatch[1]),
