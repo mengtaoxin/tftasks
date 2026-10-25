@@ -11,7 +11,7 @@
 | `npm run type-check`                | 只做 `tsc -b`                                                |
 | `npm test`                          | Vitest 跑一遍                                                |
 | `npm run test:watch`                | Vitest 监视模式                                              |
-| `npm run test:coverage`             | Vitest + V8 覆盖率                                           |
+| `npm run test:coverage`             | Vitest + V8 覆盖率，并按 `vitest.config.ts` 的 thresholds 卡门槛 |
 | `npm run lint` / `npm run lint:fix` | Oxlint 检查 / 就地修好能修的                                 |
 | `npm run fmt` / `npm run fmt:check` | Oxfmt 写回 / 只检查                                          |
 
