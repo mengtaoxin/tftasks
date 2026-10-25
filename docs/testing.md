@@ -1,9 +1,9 @@
 # 测试
 
-| 层 | 工具 | 位置 | 命名 |
-| --- | --- | --- | --- |
-| 单元 | Vitest | 和被测模块同一目录 | `*.test.ts`（也认 `*.spec.ts`） |
-| 覆盖率 | `@vitest/coverage-v8` | `coverage/`（不入库） | `npm run test:coverage` |
+| 层     | 工具                  | 位置                  | 命名                            |
+| ------ | --------------------- | --------------------- | ------------------------------- |
+| 单元   | Vitest                | 和被测模块同一目录    | `*.test.ts`（也认 `*.spec.ts`） |
+| 覆盖率 | `@vitest/coverage-v8` | `coverage/`（不入库） | `npm run test:coverage`         |
 
 `vitest.config.ts` 用 Node 环境，收录 `src/**/*.{test,spec}.ts`。现在的测试在 `src/cli.test.ts`，直接调用 `run`，不断言进程本身。
 

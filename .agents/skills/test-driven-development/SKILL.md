@@ -8,7 +8,7 @@ description: >-
 license: MIT
 metadata:
   author: mengtaoxin
-  version: "1.6.0"
+  version: '1.6.0'
 ---
 
 # Test-driven development (for agents)

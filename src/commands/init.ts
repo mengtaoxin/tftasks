@@ -7,6 +7,28 @@ import type { Command } from './types.ts';
 export const initCommand: Command = {
   name: 'init',
   summary: 'Create the local data directory',
+  help: {
+    description: 'Create the data directory, database, settings file, and subdirectories.',
+    params: 'none',
+    request: [],
+    response: [
+      {
+        name: 'success',
+        required: true,
+        description: 'Boolean. True when initialization succeeds.',
+      },
+      {
+        name: 'dataDir',
+        required: true,
+        description: 'Absolute path of the data directory.',
+      },
+      {
+        name: 'error',
+        required: false,
+        description: 'Error message when initialization fails.',
+      },
+    ],
+  },
   async run(context) {
     const unexpected = context.args[0];
     if (unexpected !== undefined) {

@@ -11,6 +11,28 @@ import type { Command } from './types.ts';
 export const backupCreateCommand: Command = {
   name: 'backup:create',
   summary: 'Create a zip backup of the database and files',
+  help: {
+    description: 'Write a zip archive of the database and attachment files.',
+    params: 'none',
+    request: [],
+    response: [
+      {
+        name: 'success',
+        required: true,
+        description: 'Boolean. True when the backup is created.',
+      },
+      {
+        name: 'path',
+        required: true,
+        description: 'Path of the backup zip.',
+      },
+      {
+        name: 'error',
+        required: false,
+        description: 'Error message when the backup fails.',
+      },
+    ],
+  },
   async run(context) {
     const unexpected = context.args[0];
     if (unexpected !== undefined) {

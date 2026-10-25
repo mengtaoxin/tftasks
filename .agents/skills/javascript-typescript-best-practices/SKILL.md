@@ -9,7 +9,7 @@ description: >-
 license: MIT
 metadata:
   author: mengtaoxin
-  version: "1.4.0"
+  version: '1.4.0'
   docs: https://www.typescriptlang.org/docs/
 ---
 
@@ -39,7 +39,7 @@ Apply these practices when writing or changing JavaScript/TypeScript. Prefer pro
 
 ```ts
 // Prefer
-type Status = "idle" | "loading" | "error";
+type Status = 'idle' | 'loading' | 'error';
 
 function assertNever(x: never): never {
   throw new Error(`Unexpected: ${String(x)}`);

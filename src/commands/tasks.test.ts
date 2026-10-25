@@ -88,6 +88,146 @@ describe('tasks', () => {
     cleanup.length = 0;
   });
 
+  describe('help', () => {
+    it('lists task:create request and response fields on separate lines', async () => {
+      const { request, response } = await taskHelp('task:create');
+      expectHelpFields(request, [
+        ['name', true],
+        ['priority', true],
+        ['detail', false],
+        ['parentId', false],
+      ]);
+      expect(helpFieldLine(request, 'name')).toMatch(/non-empty/i);
+      expect(helpFieldLine(request, 'priority')).toMatch(/low.*medium.*high/);
+      expect(helpFieldLine(request, 'detail')).toMatch(/defaults to empty/i);
+      expect(helpFieldLine(request, 'parentId')).toMatch(/defaults to null/i);
+      expectTaskHelpResponse(response);
+    });
+
+    it('lists task:read request and response fields on separate lines', async () => {
+      const { request, response } = await taskHelp('task:read');
+      expectHelpFields(request, [['id', true]]);
+      expectTaskHelpResponse(response);
+    });
+
+    it('lists task:update request and response fields on separate lines', async () => {
+      const { request, response } = await taskHelp('task:update');
+      expectHelpFields(request, [
+        ['id', true],
+        ['name', false],
+        ['detail', false],
+        ['priority', false],
+        ['parentId', false],
+      ]);
+      expectTaskHelpResponse(response);
+    });
+
+    it('lists task:delete request and response fields on separate lines', async () => {
+      const { request, response } = await taskHelp('task:delete');
+      expectHelpFields(request, [['id', true]]);
+      expectHelpFields(response, [
+        ['success', true],
+        ['error', false],
+      ]);
+      expect(response.split('\n').some((line) => line.startsWith('  task'))).toBe(false);
+    });
+
+    it('lists task:finish request and response fields on separate lines', async () => {
+      const { request, response } = await taskHelp('task:finish');
+      expectHelpFields(request, [
+        ['kind', true],
+        ['id', true],
+      ]);
+      expect(helpFieldLine(request, 'kind')).toMatch(/task/);
+      expect(helpFieldLine(request, 'kind')).toMatch(/repeat-task-config/);
+      expectTaskHelpResponse(response);
+    });
+
+    it('lists task:list request and response fields on separate lines', async () => {
+      const result = await run(['task:list', '--help']);
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toContain(
+        'Usage:\n  tftasks task:list [--params <json> | --params-file <path>]',
+      );
+      const { request, response } = helpSections(result.stdout);
+      expectHelpFields(request, [
+        ['status', false],
+        ['query', false],
+        ['priority', false],
+        ['parentId', false],
+        ['page', false],
+        ['pageSize', false],
+        ['sort', false],
+        ['order', false],
+      ]);
+      expect(helpFieldLine(request, 'status')).toMatch(/incomplete.*complete.*all/);
+      expect(helpFieldLine(request, 'status')).toMatch(/defaults to incomplete/i);
+      expect(helpFieldLine(request, 'query')).toMatch(/empty/i);
+      expect(helpFieldLine(request, 'priority')).toMatch(/low.*medium.*high/);
+      expect(helpFieldLine(request, 'page')).toMatch(/defaults to 1\b/i);
+      expect(helpFieldLine(request, 'pageSize')).toMatch(/1 to 100/);
+      expect(helpFieldLine(request, 'pageSize')).toMatch(/defaults to 20\b/i);
+      expect(helpFieldLine(request, 'sort')).toMatch(/createdAt.*updatedAt.*name.*priority/);
+      expect(helpFieldLine(request, 'sort')).toMatch(/defaults to createdAt/i);
+      expect(helpFieldLine(request, 'order')).toMatch(/asc.*desc/);
+      expect(helpFieldLine(request, 'order')).toMatch(/defaults to desc/i);
+      expectHelpFields(response, [
+        ['success', true],
+        ['items', true],
+        ['page', true],
+        ['pageSize', true],
+        ['total', true],
+        ['items.kind', true],
+        ['items.id', true],
+        ['items.name', true],
+        ['items.status', true],
+        ['items.parentId', true],
+        ['items.priority', true],
+        ['items.repeatTaskConfigId', true],
+        ['items.completedAt', true],
+        ['items.createdAt', true],
+        ['items.updatedAt', true],
+        ['items.period', true],
+        ['items.interval', true],
+        ['items.timesPerPeriod', true],
+        ['items.enabled', true],
+        ['items.remaining', true],
+        ['error', false],
+      ]);
+      for (const name of [
+        'items.id',
+        'items.name',
+        'items.priority',
+        'items.createdAt',
+        'items.updatedAt',
+      ]) {
+        const line = helpFieldLine(response, name);
+        expect(line).toMatch(/task/);
+        expect(line).toMatch(/repeat-task-config/);
+      }
+      for (const name of [
+        'items.status',
+        'items.parentId',
+        'items.repeatTaskConfigId',
+        'items.completedAt',
+      ]) {
+        const line = helpFieldLine(response, name);
+        expect(line).toMatch(/kind is task/);
+        expect(line).not.toMatch(/repeat-task-config/);
+      }
+      for (const name of [
+        'items.period',
+        'items.interval',
+        'items.timesPerPeriod',
+        'items.enabled',
+        'items.remaining',
+      ]) {
+        expect(helpFieldLine(response, name)).toMatch(/kind is repeat-task-config/);
+      }
+    });
+  });
+
   async function initHome(): Promise<string> {
     const dataDir = mkdtempSync(path.join(tmpdir(), 'tftasks-task-'));
     cleanup.push(dataDir);
@@ -575,6 +715,68 @@ function isTask(value: unknown): value is TaskJson {
     'detail' in value &&
     'detailPath' in value
   );
+}
+
+const taskHelpResponseFields = [
+  ['success', true],
+  ['task', true],
+  ['task.id', true],
+  ['task.name', true],
+  ['task.status', true],
+  ['task.parentId', true],
+  ['task.priority', true],
+  ['task.repeatTaskConfigId', true],
+  ['task.completedAt', true],
+  ['task.createdAt', true],
+  ['task.updatedAt', true],
+  ['task.detail', true],
+  ['task.detailPath', true],
+  ['error', false],
+] as const;
+
+async function taskHelp(command: string): Promise<{ request: string; response: string }> {
+  const result = await run([command, '--help']);
+  expect(result.exitCode).toBe(0);
+  expect(result.stderr).toBe('');
+  expect(result.stdout).not.toContain('Unexpected argument');
+  return helpSections(result.stdout);
+}
+
+function expectTaskHelpResponse(response: string): void {
+  expectHelpFields(response, taskHelpResponseFields);
+  expect(helpFieldLine(response, 'task.status')).toMatch(/incomplete.*complete/);
+  expect(helpFieldLine(response, 'task.priority')).toMatch(/low.*medium.*high/);
+}
+
+function helpSections(stdout: string): { request: string; response: string } {
+  const requestLabel = '\nRequest:\n';
+  const responseLabel = '\nResponse:\n';
+  const requestAt = stdout.indexOf(requestLabel);
+  const responseAt = stdout.indexOf(responseLabel);
+  if (requestAt < 0 || responseAt < requestAt) {
+    throw new Error('Expected Request and Response sections');
+  }
+  return {
+    request: stdout.slice(requestAt + requestLabel.length, responseAt),
+    response: stdout.slice(responseAt + responseLabel.length),
+  };
+}
+
+function expectHelpFields(section: string, fields: readonly (readonly [string, boolean])[]): void {
+  for (const [name, required] of fields) {
+    const requirement = required ? 'required' : 'optional';
+    const escaped = name.replaceAll('.', '\\.');
+    expect(section).toMatch(new RegExp(`^  ${escaped} +${requirement} +\\S`, 'm'));
+  }
+}
+
+function helpFieldLine(section: string, name: string): string {
+  const escaped = name.replaceAll('.', '\\.');
+  const match = section.match(new RegExp(`^  ${escaped} +(required|optional) +(.*)$`, 'm'));
+  if (match === null) {
+    throw new Error(`Missing help field: ${name}`);
+  }
+  return match[2] ?? '';
 }
 
 function taskNames(dataDir: string): string[] {

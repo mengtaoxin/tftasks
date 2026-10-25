@@ -8,7 +8,7 @@
 ├── src/
 │   ├── main.ts               进程入口：调用 run，写出 stdout / stderr，设置 exitCode
 │   ├── cli.ts                解析 argv，分发命令，返回 CommandResult
-│   ├── help.ts               内置 help 命令和帮助文本
+│   ├── help.ts               内置 help 命令；结构化 help 由渲染函数输出
 │   ├── data-dir.ts           解析数据目录（TFTASKS_HOME 或 ~/.tftasks）
 │   ├── params.ts             --params / --params-file
 │   ├── json-result.ts        JSON 成功/失败结果
@@ -46,12 +46,12 @@
 
 `node_modules/`、`dist/`、`coverage/` 不入库。
 
-`src/main.ts` 只负责碰到进程。参数解析和命令分发在 `src/cli.ts`，方便测试直接调用 `run`。`help` 是内置命令，写在 `src/help.ts`，不进 `registry.ts`。`-h` / `--help` 和 `-v` / `--version` 也在 `cli.ts` 里处理。
+`src/main.ts` 只负责碰到进程。参数解析和命令分发在 `src/cli.ts`，方便测试直接调用 `run`。`help` 是内置命令，写在 `src/help.ts`，不进 `registry.ts`。每条命令带结构化 `help`，由 `src/help.ts` 的渲染函数输出。顶层的 `-h` / `--help` 和 `-v` / `--version` 在 `cli.ts` 里处理；命令后面只跟一个 `-h` 或 `--help` 时，也在分发前渲染该命令的帮助。
 
 本地数据目录默认 `~/.tftasks`（测试用 `TFTASKS_HOME` 覆盖），经 `init` 后包含 `tftasks.db`、`settings.json`、`logs/`、`backups/`、`files/`。
 
 ## 放文件
 
-一条新的任务命令实现 `Command`，源文件放在 `src/commands/`，再加进 `registry.ts` 的 `commands`。帮助文本会把它列出来。
+一条新的任务命令实现 `Command`，源文件放在 `src/commands/`，再加进 `registry.ts` 的 `commands`。总览会列出它的名字和 summary。命令自己携带结构化 `help`，由渲染函数输出。
 
 测试和被测模块放在同一目录，命名 `*.test.ts`（`*.spec.ts` 同样会被 Vitest 收进去）。配置文件留在仓库根目录，并列入 `tsconfig.node.json` 的 `include`。
