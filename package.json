@@ -1,0 +1,38 @@
+{
+  "name": "tftasks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Command-line task manager",
+  "license": "MIT",
+  "bin": {
+    "tftasks": "./dist/tftasks.js"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "node src/main.ts",
+    "build": "tsc -b && vite build",
+    "start": "node dist/tftasks.js",
+    "type-check": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "fmt": "oxfmt .",
+    "fmt:check": "oxfmt --check"
+  },
+  "devDependencies": {
+    "@mengtaoxin/oxc-config": "file:../oxc-config",
+    "@types/node": "^24.19.2",
+    "@vitest/coverage-v8": "^5.0.5",
+    "oxfmt": "^0.74.0",
+    "oxlint": "^1.89.0",
+    "oxlint-tsgolint": "^7.0.2005",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}
