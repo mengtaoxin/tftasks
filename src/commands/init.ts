@@ -2,30 +2,46 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createDatabase } from '../db/open.ts';
 import { jsonFailure, jsonSuccess } from '../json-result.ts';
+import { DEFAULT_SETTINGS, settingsPath } from '../settings.ts';
 import type { Command } from './types.ts';
 
 export const initCommand: Command = {
   name: 'init',
-  summary: 'Create the local data directory',
+  summary: {
+    en: 'Create the local data directory',
+    zh: '创建本地数据目录',
+  },
   help: {
-    description: 'Create the data directory, database, settings file, and subdirectories.',
+    description: {
+      en: 'Create the data directory, database, settings file, and subdirectories.',
+      zh: '创建数据目录、数据库、配置文件和子目录。',
+    },
     params: 'none',
     request: [],
     response: [
       {
         name: 'success',
         required: true,
-        description: 'Boolean. True when initialization succeeds.',
+        description: {
+          en: 'Boolean. True when initialization succeeds.',
+          zh: '布尔值。初始化成功时为 true。',
+        },
       },
       {
         name: 'dataDir',
         required: true,
-        description: 'Absolute path of the data directory.',
+        description: {
+          en: 'Absolute path of the data directory.',
+          zh: '数据目录的绝对路径。',
+        },
       },
       {
         name: 'error',
         required: false,
-        description: 'Error message when initialization fails.',
+        description: {
+          en: 'Error message when initialization fails.',
+          zh: '初始化失败时的错误信息。',
+        },
       },
     ],
   },
@@ -54,14 +70,10 @@ async function ensureLayout(dataDir: string): Promise<void> {
 
 async function writeSettingsIfMissing(dataDir: string): Promise<void> {
   try {
-    await writeFile(
-      path.join(dataDir, 'settings.json'),
-      `${JSON.stringify({ version: 1 }, null, 2)}\n`,
-      {
-        encoding: 'utf8',
-        flag: 'wx',
-      },
-    );
+    await writeFile(settingsPath(dataDir), `${JSON.stringify(DEFAULT_SETTINGS, null, 2)}\n`, {
+      encoding: 'utf8',
+      flag: 'wx',
+    });
   } catch (error: unknown) {
     if (isEexist(error)) {
       return;

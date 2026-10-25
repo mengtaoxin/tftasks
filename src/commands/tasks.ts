@@ -1,4 +1,29 @@
+import {
+  booleanTrueWhenSucceeds,
+  booleanValue,
+  errorMessageWhenFails,
+  integerGte1,
+  joinSentence,
+  nonEmptyString,
+  onTaskAndRepeatConfig,
+  orderDefaultsDesc,
+  pageDefaults1,
+  pageNumberFrom1,
+  pageSizeDefaults20,
+  pageSizeMaxItems,
+  periodChoices,
+  priorityChoices,
+  queryEmptyNoFilter,
+  sortDefaultsCreatedAt,
+  stringDefaultsEmpty,
+  stringValue,
+  taskUuid,
+  totalMatchingItems,
+  whenKindIsRepeatConfig,
+  whenKindIsTask,
+} from '../i18n/common.ts';
 import { jsonSuccess } from '../json-result.ts';
+import type { Localized } from '../lang.ts';
 import { finishRepeatTaskConfig } from '../repeat/repository.ts';
 import {
   parseCreateParams,
@@ -15,91 +40,132 @@ import type { Command, CommandHelp, CommandHelpParam } from './types.ts';
 const successField: CommandHelpParam = {
   name: 'success',
   required: true,
-  description: 'Boolean. True when the command succeeds.',
+  description: booleanTrueWhenSucceeds,
 };
 
 const errorField: CommandHelpParam = {
   name: 'error',
   required: false,
-  description: 'Error message when the command fails.',
+  description: errorMessageWhenFails,
+};
+
+const incompleteOrComplete: Localized = {
+  en: 'incomplete or complete.',
+  zh: 'incomplete 或 complete。',
 };
 
 const taskFields: readonly CommandHelpParam[] = [
   {
     name: 'task',
     required: true,
-    description: 'The task.',
+    description: {
+      en: 'The task.',
+      zh: '任务。',
+    },
   },
   {
     name: 'task.id',
     required: true,
-    description: 'Task UUID.',
+    description: taskUuid,
   },
   {
     name: 'task.name',
     required: true,
-    description: 'Non-empty task name.',
+    description: {
+      en: 'Non-empty task name.',
+      zh: '非空任务名称。',
+    },
   },
   {
     name: 'task.status',
     required: true,
-    description: 'incomplete or complete.',
+    description: incompleteOrComplete,
   },
   {
     name: 'task.parentId',
     required: true,
-    description: 'Parent task UUID, or null.',
+    description: {
+      en: 'Parent task UUID, or null.',
+      zh: '父任务 UUID，或 null。',
+    },
   },
   {
     name: 'task.priority',
     required: true,
-    description: 'low, medium, or high.',
+    description: priorityChoices,
   },
   {
     name: 'task.repeatTaskConfigId',
     required: true,
-    description: 'Repeat task config UUID, or null.',
+    description: {
+      en: 'Repeat task config UUID, or null.',
+      zh: '重复任务配置 UUID，或 null。',
+    },
   },
   {
     name: 'task.startsAt',
     required: true,
-    description: 'ISO-8601 timestamp at the local start of the start date, or null.',
+    description: {
+      en: 'ISO-8601 timestamp at the local start of the start date, or null.',
+      zh: '开始日本地起始时刻的 ISO-8601 时间戳，或 null。',
+    },
   },
   {
     name: 'task.endsAt',
     required: true,
-    description: 'ISO-8601 timestamp at the local end of the end date, or null.',
+    description: {
+      en: 'ISO-8601 timestamp at the local end of the end date, or null.',
+      zh: '结束日本地结束时刻的 ISO-8601 时间戳，或 null。',
+    },
   },
   {
     name: 'task.completedAt',
     required: true,
-    description: 'ISO-8601 timestamp when the task was actually finished, or null.',
+    description: {
+      en: 'ISO-8601 timestamp when the task was actually finished, or null.',
+      zh: '任务实际完成时的 ISO-8601 时间戳，或 null。',
+    },
   },
   {
     name: 'task.createdAt',
     required: true,
-    description: 'ISO-8601 timestamp when the task was created.',
+    description: {
+      en: 'ISO-8601 timestamp when the task was created.',
+      zh: '任务创建时的 ISO-8601 时间戳。',
+    },
   },
   {
     name: 'task.updatedAt',
     required: true,
-    description: 'ISO-8601 timestamp when the task was last updated.',
+    description: {
+      en: 'ISO-8601 timestamp when the task was last updated.',
+      zh: '任务最近更新时的 ISO-8601 时间戳。',
+    },
   },
   {
     name: 'task.detail',
     required: true,
-    description: 'Task detail text.',
+    description: {
+      en: 'Task detail text.',
+      zh: '任务详情文本。',
+    },
   },
   {
     name: 'task.detailPath',
     required: true,
-    description: 'Absolute path of the task detail file.',
+    description: {
+      en: 'Absolute path of the task detail file.',
+      zh: '任务详情文件的绝对路径。',
+    },
   },
 ];
 
 const taskResponse: readonly CommandHelpParam[] = [successField, ...taskFields, errorField];
 
-function taskCommandHelp(description: string, request: readonly CommandHelpParam[]): CommandHelp {
+function taskCommandHelp(
+  description: Localized,
+  request: readonly CommandHelpParam[],
+): CommandHelp {
   return {
     description,
     params: 'required',
@@ -108,47 +174,79 @@ function taskCommandHelp(description: string, request: readonly CommandHelpParam
   };
 }
 
-const onTaskAndRepeatConfig = 'Present on task and repeat-task-config items.';
-const whenKindIsTask = 'Present when items.kind is task.';
-const whenKindIsRepeatConfig = 'Present when items.kind is repeat-task-config.';
+const idLead: Localized = {
+  en: 'Id.',
+  zh: '标识。',
+};
+
+const nameLead: Localized = {
+  en: 'Name.',
+  zh: '名称。',
+};
+
+const creationTimeLead: Localized = {
+  en: 'ISO-8601 creation time.',
+  zh: 'ISO-8601 创建时间。',
+};
+
+const updateTimeLead: Localized = {
+  en: 'ISO-8601 update time.',
+  zh: 'ISO-8601 更新时间。',
+};
 
 export const taskCreateCommand: Command = {
   name: 'task:create',
-  summary: 'Create a task',
-  help: taskCommandHelp('Create a task with a name and priority.', [
+  summary: {
+    en: 'Create a task',
+    zh: '创建任务',
+  },
+  help: taskCommandHelp(
     {
-      name: 'name',
-      required: true,
-      description: 'Non-empty string.',
+      en: 'Create a task with a name and priority.',
+      zh: '按名称与优先级创建任务。',
     },
-    {
-      name: 'priority',
-      required: true,
-      description: 'low, medium, or high.',
-    },
-    {
-      name: 'detail',
-      required: false,
-      description: 'String. Defaults to empty.',
-    },
-    {
-      name: 'parentId',
-      required: false,
-      description: 'Task UUID or null. Defaults to null.',
-    },
-    {
-      name: 'startsAt',
-      required: false,
-      description:
-        'YYYY-MM-DD or an ISO-8601 timestamp. Stored as the local start of that day. Defaults to null.',
-    },
-    {
-      name: 'endsAt',
-      required: false,
-      description:
-        'YYYY-MM-DD or an ISO-8601 timestamp. Stored as the local end of that day. Defaults to null.',
-    },
-  ]),
+    [
+      {
+        name: 'name',
+        required: true,
+        description: nonEmptyString,
+      },
+      {
+        name: 'priority',
+        required: true,
+        description: priorityChoices,
+      },
+      {
+        name: 'detail',
+        required: false,
+        description: stringDefaultsEmpty,
+      },
+      {
+        name: 'parentId',
+        required: false,
+        description: {
+          en: 'Task UUID or null. Defaults to null.',
+          zh: '任务 UUID 或 null。默认为 null。',
+        },
+      },
+      {
+        name: 'startsAt',
+        required: false,
+        description: {
+          en: 'YYYY-MM-DD or an ISO-8601 timestamp. Stored as the local start of that day. Defaults to null.',
+          zh: 'YYYY-MM-DD 或 ISO-8601 时间戳。按该日本地起始时刻存储。默认为 null。',
+        },
+      },
+      {
+        name: 'endsAt',
+        required: false,
+        description: {
+          en: 'YYYY-MM-DD or an ISO-8601 timestamp. Stored as the local end of that day. Defaults to null.',
+          zh: 'YYYY-MM-DD 或 ISO-8601 时间戳。按该日本地结束时刻存储。默认为 null。',
+        },
+      },
+    ],
+  ),
   run(context) {
     return runJsonCommand(context, async (params) => {
       const task = await createTask(context.dataDir, parseCreateParams(params));
@@ -159,14 +257,23 @@ export const taskCreateCommand: Command = {
 
 export const taskReadCommand: Command = {
   name: 'task:read',
-  summary: 'Read a task',
-  help: taskCommandHelp('Read one task by id.', [
+  summary: {
+    en: 'Read a task',
+    zh: '读取任务',
+  },
+  help: taskCommandHelp(
     {
-      name: 'id',
-      required: true,
-      description: 'Task UUID.',
+      en: 'Read one task by id.',
+      zh: '按 id 读取一个任务。',
     },
-  ]),
+    [
+      {
+        name: 'id',
+        required: true,
+        description: taskUuid,
+      },
+    ],
+  ),
   run(context) {
     return runJsonCommand(context, async (params) => {
       const task = await readTask(context.dataDir, parseIdParams(params));
@@ -177,46 +284,59 @@ export const taskReadCommand: Command = {
 
 export const taskUpdateCommand: Command = {
   name: 'task:update',
-  summary: 'Update a task',
+  summary: {
+    en: 'Update a task',
+    zh: '更新任务',
+  },
   help: taskCommandHelp(
-    'Change the name, detail, priority, parent, start date, or end date of an incomplete task.',
+    {
+      en: 'Change the name, detail, priority, parent, start date, or end date of an incomplete task.',
+      zh: '修改未完成任务的名称、详情、优先级、父任务、开始日期或结束日期。',
+    },
     [
       {
         name: 'id',
         required: true,
-        description: 'Task UUID.',
+        description: taskUuid,
       },
       {
         name: 'name',
         required: false,
-        description: 'Non-empty string.',
+        description: nonEmptyString,
       },
       {
         name: 'detail',
         required: false,
-        description: 'String.',
+        description: stringValue,
       },
       {
         name: 'priority',
         required: false,
-        description: 'low, medium, or high.',
+        description: priorityChoices,
       },
       {
         name: 'parentId',
         required: false,
-        description: 'Task UUID or null.',
+        description: {
+          en: 'Task UUID or null.',
+          zh: '任务 UUID 或 null。',
+        },
       },
       {
         name: 'startsAt',
         required: false,
-        description:
-          'YYYY-MM-DD, an ISO-8601 timestamp, or null. Stored as the local start of that day. Null clears it.',
+        description: {
+          en: 'YYYY-MM-DD, an ISO-8601 timestamp, or null. Stored as the local start of that day. Null clears it.',
+          zh: 'YYYY-MM-DD、ISO-8601 时间戳或 null。按该日本地起始时刻存储。null 表示清除。',
+        },
       },
       {
         name: 'endsAt',
         required: false,
-        description:
-          'YYYY-MM-DD, an ISO-8601 timestamp, or null. Stored as the local end of that day. Null clears it.',
+        description: {
+          en: 'YYYY-MM-DD, an ISO-8601 timestamp, or null. Stored as the local end of that day. Null clears it.',
+          zh: 'YYYY-MM-DD、ISO-8601 时间戳或 null。按该日本地结束时刻存储。null 表示清除。',
+        },
       },
     ],
   ),
@@ -230,15 +350,21 @@ export const taskUpdateCommand: Command = {
 
 export const taskDeleteCommand: Command = {
   name: 'task:delete',
-  summary: 'Delete a task',
+  summary: {
+    en: 'Delete a task',
+    zh: '删除任务',
+  },
   help: {
-    description: 'Delete a task by id.',
+    description: {
+      en: 'Delete a task by id.',
+      zh: '按 id 删除任务。',
+    },
     params: 'required',
     request: [
       {
         name: 'id',
         required: true,
-        description: 'Task UUID.',
+        description: taskUuid,
       },
     ],
     response: [successField, errorField],
@@ -253,19 +379,31 @@ export const taskDeleteCommand: Command = {
 
 export const taskFinishCommand: Command = {
   name: 'task:finish',
-  summary: 'Finish a task',
+  summary: {
+    en: 'Finish a task',
+    zh: '完成任务',
+  },
   help: taskCommandHelp(
-    'Finish a task or a repeat task config. Both kinds return the completed task.',
+    {
+      en: 'Finish a task or a repeat task config. Both kinds return the completed task.',
+      zh: '完成任务或重复任务配置。两种类型都返回已完成的任务。',
+    },
     [
       {
         name: 'kind',
         required: true,
-        description: 'task or repeat-task-config.',
+        description: {
+          en: 'task or repeat-task-config.',
+          zh: 'task 或 repeat-task-config。',
+        },
       },
       {
         name: 'id',
         required: true,
-        description: 'UUID of the task or repeat task config.',
+        description: {
+          en: 'UUID of the task or repeat task config.',
+          zh: '任务或重复任务配置的 UUID。',
+        },
       },
     ],
   ),
@@ -283,51 +421,62 @@ export const taskFinishCommand: Command = {
 
 export const taskListCommand: Command = {
   name: 'task:list',
-  summary: 'List tasks',
+  summary: {
+    en: 'List tasks',
+    zh: '列出任务',
+  },
   help: {
-    description: 'List tasks and repeat task configs. Filters and paging are optional.',
+    description: {
+      en: 'List tasks and repeat task configs. Filters and paging are optional.',
+      zh: '列出任务与重复任务配置。筛选与分页可选。',
+    },
     params: 'optional',
     request: [
       {
         name: 'status',
         required: false,
-        description: 'incomplete, complete, or all. Defaults to incomplete.',
+        description: {
+          en: 'incomplete, complete, or all. Defaults to incomplete.',
+          zh: 'incomplete、complete 或 all。默认为 incomplete。',
+        },
       },
       {
         name: 'query',
         required: false,
-        description: 'String. An empty string does not filter.',
+        description: queryEmptyNoFilter,
       },
       {
         name: 'priority',
         required: false,
-        description: 'low, medium, or high.',
+        description: priorityChoices,
       },
       {
         name: 'parentId',
         required: false,
-        description:
-          'Task UUID or null. When set, only tasks with that parent are included; null means no parent.',
+        description: {
+          en: 'Task UUID or null. When set, only tasks with that parent are included; null means no parent.',
+          zh: '任务 UUID 或 null。设置后只包含该父任务下的任务；null 表示无父任务。',
+        },
       },
       {
         name: 'page',
         required: false,
-        description: 'Integer greater than or equal to 1. Defaults to 1.',
+        description: pageDefaults1,
       },
       {
         name: 'pageSize',
         required: false,
-        description: 'Integer from 1 to 100. Defaults to 20.',
+        description: pageSizeDefaults20,
       },
       {
         name: 'sort',
         required: false,
-        description: 'createdAt, updatedAt, name, or priority. Defaults to createdAt.',
+        description: sortDefaultsCreatedAt,
       },
       {
         name: 'order',
         required: false,
-        description: 'asc or desc. Defaults to desc.',
+        description: orderDefaultsDesc,
       },
     ],
     response: [
@@ -335,107 +484,131 @@ export const taskListCommand: Command = {
       {
         name: 'items',
         required: true,
-        description: 'Page of tasks and repeat task configs.',
+        description: {
+          en: 'Page of tasks and repeat task configs.',
+          zh: '本页的任务与重复任务配置。',
+        },
       },
       {
         name: 'page',
         required: true,
-        description: 'Page number, starting at 1.',
+        description: pageNumberFrom1,
       },
       {
         name: 'pageSize',
         required: true,
-        description: 'Maximum number of items on this page.',
+        description: pageSizeMaxItems,
       },
       {
         name: 'total',
         required: true,
-        description: 'Total number of matching items.',
+        description: totalMatchingItems,
       },
       {
         name: 'items.kind',
         required: true,
-        description: 'task or repeat-task-config.',
+        description: {
+          en: 'task or repeat-task-config.',
+          zh: 'task 或 repeat-task-config。',
+        },
       },
       {
         name: 'items.id',
         required: true,
-        description: `Id. ${onTaskAndRepeatConfig}`,
+        description: joinSentence(idLead, onTaskAndRepeatConfig),
       },
       {
         name: 'items.name',
         required: true,
-        description: `Name. ${onTaskAndRepeatConfig}`,
+        description: joinSentence(nameLead, onTaskAndRepeatConfig),
       },
       {
         name: 'items.status',
         required: true,
-        description: `incomplete or complete. ${whenKindIsTask}`,
+        description: joinSentence(incompleteOrComplete, whenKindIsTask),
       },
       {
         name: 'items.parentId',
         required: true,
-        description: `Parent task UUID, or null. ${whenKindIsTask}`,
+        description: {
+          en: 'Parent task UUID, or null. Present when items.kind is task.',
+          zh: '父任务 UUID，或 null。当 items.kind 为 task 时有。',
+        },
       },
       {
         name: 'items.priority',
         required: true,
-        description: `low, medium, or high. ${onTaskAndRepeatConfig}`,
+        description: joinSentence(priorityChoices, onTaskAndRepeatConfig),
       },
       {
         name: 'items.repeatTaskConfigId',
         required: true,
-        description: `Repeat task config UUID, or null. ${whenKindIsTask}`,
+        description: {
+          en: 'Repeat task config UUID, or null. Present when items.kind is task.',
+          zh: '重复任务配置 UUID，或 null。当 items.kind 为 task 时有。',
+        },
       },
       {
         name: 'items.startsAt',
         required: true,
-        description: `ISO-8601 timestamp at the local start of the start date, or null. ${whenKindIsTask}`,
+        description: {
+          en: 'ISO-8601 timestamp at the local start of the start date, or null. Present when items.kind is task.',
+          zh: '开始日本地起始时刻的 ISO-8601 时间戳，或 null。当 items.kind 为 task 时有。',
+        },
       },
       {
         name: 'items.endsAt',
         required: true,
-        description: `ISO-8601 timestamp at the local end of the end date, or null. ${whenKindIsTask}`,
+        description: {
+          en: 'ISO-8601 timestamp at the local end of the end date, or null. Present when items.kind is task.',
+          zh: '结束日本地结束时刻的 ISO-8601 时间戳，或 null。当 items.kind 为 task 时有。',
+        },
       },
       {
         name: 'items.completedAt',
         required: true,
-        description: `ISO-8601 timestamp when the task was actually finished, or null. ${whenKindIsTask}`,
+        description: {
+          en: 'ISO-8601 timestamp when the task was actually finished, or null. Present when items.kind is task.',
+          zh: '任务实际完成时的 ISO-8601 时间戳，或 null。当 items.kind 为 task 时有。',
+        },
       },
       {
         name: 'items.createdAt',
         required: true,
-        description: `ISO-8601 creation time. ${onTaskAndRepeatConfig}`,
+        description: joinSentence(creationTimeLead, onTaskAndRepeatConfig),
       },
       {
         name: 'items.updatedAt',
         required: true,
-        description: `ISO-8601 update time. ${onTaskAndRepeatConfig}`,
+        description: joinSentence(updateTimeLead, onTaskAndRepeatConfig),
       },
       {
         name: 'items.period',
         required: true,
-        description: `day, week, month, or year. ${whenKindIsRepeatConfig}`,
+        description: joinSentence(periodChoices, whenKindIsRepeatConfig),
       },
       {
         name: 'items.interval',
         required: true,
-        description: `Integer greater than or equal to 1. ${whenKindIsRepeatConfig}`,
+        description: joinSentence(integerGte1, whenKindIsRepeatConfig),
       },
       {
         name: 'items.timesPerPeriod',
         required: true,
-        description: `Integer greater than or equal to 1. ${whenKindIsRepeatConfig}`,
+        description: joinSentence(integerGte1, whenKindIsRepeatConfig),
       },
       {
         name: 'items.enabled',
         required: true,
-        description: `Boolean. ${whenKindIsRepeatConfig}`,
+        description: joinSentence(booleanValue, whenKindIsRepeatConfig),
       },
       {
         name: 'items.remaining',
         required: true,
-        description: `Completions still due in the current period. ${whenKindIsRepeatConfig}`,
+        description: {
+          en: 'Completions still due in the current period. Present when items.kind is repeat-task-config.',
+          zh: '当前周期内仍待完成的次数。当 items.kind 为 repeat-task-config 时有。',
+        },
       },
       errorField,
     ],

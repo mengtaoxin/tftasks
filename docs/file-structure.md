@@ -9,6 +9,9 @@
 │   ├── main.ts               进程入口：调用 run，写出 stdout / stderr，设置 exitCode
 │   ├── cli.ts                解析 argv，分发命令，返回 CommandResult
 │   ├── help.ts               总览与命令结构化 help 的渲染
+│   ├── lang.ts               语言类型与 Localized 文案
+│   ├── settings.ts           读写 settings.json（含 lang）
+│   ├── i18n/                 帮助与 CLI 框架文案
 │   ├── data-dir.ts           解析数据目录（TFTASKS_HOME 或 ~/.tftasks）
 │   ├── params.ts             --params / --params-file
 │   ├── json-result.ts        JSON 成功/失败结果
@@ -48,7 +51,7 @@
 
 `src/main.ts` 只负责碰到进程。参数解析和命令分发在 `src/cli.ts`，方便测试直接调用 `run`。总览与命令帮助都由 `-h` / `--help` 触发，渲染逻辑在 `src/help.ts`。每条命令带结构化 `help`。顶层的 `-h` / `--help` 和 `-v` / `--version` 在 `cli.ts` 里处理；命令后面只跟一个 `-h` 或 `--help` 时，也在分发前渲染该命令的帮助。
 
-本地数据目录默认 `~/.tftasks`（测试用 `TFTASKS_HOME` 覆盖），经 `init` 后包含 `tftasks.db`、`settings.json`、`logs/`、`backups/`、`files/`。
+本地数据目录默认 `~/.tftasks`（测试用 `TFTASKS_HOME` 覆盖），经 `init` 后包含 `tftasks.db`、`settings.json`、`logs/`、`backups/`、`files/`。`settings.json` 含 `version` 与 `lang`（`en` / `zh`，默认 `en`），影响帮助与 CLI 提示文案。
 
 ## 放文件
 

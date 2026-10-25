@@ -212,5 +212,4 @@ describe('run', () => {
     expect(result.stdout).toMatch(/^\s{2}path\s+required\s+/m);
     expect(result.stdout).toMatch(/^\s{2}error\s+optional\s+/m);
   });
-
 });

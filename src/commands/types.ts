@@ -1,3 +1,5 @@
+import type { Localized } from '../lang.ts';
+
 export type CommandContext = {
   args: readonly string[];
   dataDir: string;
@@ -14,11 +16,11 @@ export type CommandParamsMode = 'none' | 'optional' | 'required';
 export type CommandHelpParam = {
   readonly name: string;
   readonly required: boolean;
-  readonly description: string;
+  readonly description: Localized;
 };
 
 export type CommandHelp = {
-  readonly description: string;
+  readonly description: Localized;
   readonly params: CommandParamsMode;
   readonly request: readonly CommandHelpParam[];
   readonly response: readonly CommandHelpParam[];
@@ -26,7 +28,7 @@ export type CommandHelp = {
 
 export type Command = {
   name: string;
-  summary: string;
+  summary: Localized;
   help: CommandHelp;
   run: (context: CommandContext) => Promise<CommandResult>;
 };

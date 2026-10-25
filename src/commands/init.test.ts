@@ -50,6 +50,7 @@ describe('init', () => {
     }
     expect(JSON.parse(await readFile(path.join(dataDir, 'settings.json'), 'utf8'))).toEqual({
       version: 1,
+      lang: 'en',
     });
 
     const db = new DatabaseSync(path.join(dataDir, 'tftasks.db'));

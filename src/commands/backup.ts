@@ -10,26 +10,41 @@ import type { Command } from './types.ts';
 
 export const backupCreateCommand: Command = {
   name: 'backup:create',
-  summary: 'Create a zip backup of the database and files',
+  summary: {
+    en: 'Create a zip backup of the database and files',
+    zh: '创建数据库与文件的 zip 备份',
+  },
   help: {
-    description: 'Write a zip archive of the database and attachment files.',
+    description: {
+      en: 'Write a zip archive of the database and attachment files.',
+      zh: '将数据库与附件文件写入 zip 归档。',
+    },
     params: 'none',
     request: [],
     response: [
       {
         name: 'success',
         required: true,
-        description: 'Boolean. True when the backup is created.',
+        description: {
+          en: 'Boolean. True when the backup is created.',
+          zh: '布尔值。备份创建成功时为 true。',
+        },
       },
       {
         name: 'path',
         required: true,
-        description: 'Path of the backup zip.',
+        description: {
+          en: 'Path of the backup zip.',
+          zh: '备份 zip 的路径。',
+        },
       },
       {
         name: 'error',
         required: false,
-        description: 'Error message when the backup fails.',
+        description: {
+          en: 'Error message when the backup fails.',
+          zh: '备份失败时的错误信息。',
+        },
       },
     ],
   },

@@ -1,43 +1,48 @@
 import { commands } from './commands/registry.ts';
 import type { Command, CommandHelpParam } from './commands/types.ts';
+import { helpChrome } from './i18n/ui.ts';
+import type { Lang } from './lang.ts';
+import { text } from './lang.ts';
 
-export function renderCommandHelp(command: Command): string {
+export function renderCommandHelp(command: Command, lang: Lang): string {
+  const chrome = helpChrome(lang);
   const { help } = command;
   return [
-    `${command.name} — ${command.summary}`,
+    `${command.name} — ${text(lang, command.summary)}`,
     '',
-    help.description,
+    text(lang, help.description),
     '',
-    'Usage:',
+    chrome.usage,
     usageLine(command),
     '',
-    'Request:',
-    formatParams(help.request),
+    chrome.request,
+    formatParams(help.request, lang),
     '',
-    'Response:',
-    formatParams(help.response),
+    chrome.response,
+    formatParams(help.response, lang),
     '',
   ].join('\n');
 }
 
-export function helpText(): string {
+export function helpText(lang: Lang): string {
+  const chrome = helpChrome(lang);
   const nameWidth = Math.max(...commands.map((command) => command.name.length)) + 2;
   const commandLines = commands
-    .map((command) => `  ${command.name.padEnd(nameWidth)}${command.summary}`)
+    .map((command) => `  ${command.name.padEnd(nameWidth)}${text(lang, command.summary)}`)
     .join('\n');
 
   return [
-    'tftasks — task manager',
+    chrome.overviewTitle,
     '',
-    'Usage:',
+    chrome.usage,
     '  tftasks <command> [args]',
     '',
-    'Commands:',
+    chrome.commands,
     commandLines,
     '',
-    'Options:',
-    "  -h, --help       Show this overview. After a command alone, show only that command's help",
-    '  -v, --version    Show version',
+    chrome.options,
+    `  -h, --help       ${chrome.helpOption}`,
+    `  -v, --version    ${chrome.versionOption}`,
     '',
   ].join('\n');
 }
@@ -57,17 +62,18 @@ function usageLine(command: Command): string {
   }
 }
 
-function formatParams(params: readonly CommandHelpParam[]): string {
+function formatParams(params: readonly CommandHelpParam[], lang: Lang): string {
+  const chrome = helpChrome(lang);
   if (params.length === 0) {
-    return '  No parameters.';
+    return `  ${chrome.noParameters}`;
   }
 
   const nameWidth = Math.max(...params.map((param) => param.name.length)) + 2;
-  const requirementWidth = 'optional'.length + 2;
+  const requirementWidth = Math.max(chrome.required.length, chrome.optional.length) + 2;
   return params
     .map((param) => {
-      const requirement = param.required ? 'required' : 'optional';
-      return `  ${param.name.padEnd(nameWidth)}${requirement.padEnd(requirementWidth)}${param.description}`;
+      const requirement = param.required ? chrome.required : chrome.optional;
+      return `  ${param.name.padEnd(nameWidth)}${requirement.padEnd(requirementWidth)}${text(lang, param.description)}`;
     })
     .join('\n');
 }
